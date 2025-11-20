@@ -1,4 +1,4 @@
-const API_BASE = "https://api.openweathermap.org/data/2.5";
+const API_BASE = "https://api.tomorrow.io/v4/weather/forecast";
 
 export type SimpleWeather = {
   high: number;
@@ -8,101 +8,133 @@ export type SimpleWeather = {
   description: string;
 };
 
-function mapConditionToIcon(main: string): SimpleWeather["icon"] {
-  const key = main.toLowerCase();
-  if (key.includes("rain") || key.includes("drizzle") || key.includes("storm")) return "rain";
-  if (key.includes("cloud")) return "cloudy";
-  return "sunny"; // default
+// Map Tomorrow.io weather codes to icon types
+function mapWeatherCodeToIcon(weatherCode: number): SimpleWeather["icon"] {
+  if ([4000, 4001, 4200, 4201].includes(weatherCode)) return "rain"; // drizzle/rain
+  if ([1001, 1102].includes(weatherCode)) return "cloudy"; // cloudy/mostly cloudy
+  if ([1000, 1100, 1101].includes(weatherCode)) return "sunny"; // clear/mostly clear/partly
+  return "partly";
 }
 
-/**
- * Given all 3-hour entries for a specific date, aggregate into a single daily-style summary.
- */
-function aggregateDay(entries: any[]): SimpleWeather {
-  const highs = entries.map((e) => e.main.temp_max);
-  const lows = entries.map((e) => e.main.temp_min);
-  const pops = entries.map((e) => (e.pop ?? 0) * 100);
-
-  const high = Math.max(...highs);
-  const low = Math.min(...lows);
-  const rainChance = Math.round(Math.max(...pops));
-
-  // Choose the entry with highest POP to drive icon/description
-  let chosen = entries[0];
-  let maxPop = pops[0] ?? 0;
-
-  entries.forEach((entry, idx) => {
-    const pop = pops[idx] ?? 0;
-    if (pop > maxPop) {
-      maxPop = pop;
-      chosen = entry;
-    }
-  });
-
-  const weatherMain = chosen.weather?.[0]?.main ?? "Clear";
-  const description = chosen.weather?.[0]?.description ?? "No description";
-
-  return {
-    high: Math.round(high),
-    low: Math.round(low),
-    rainChance,
-    icon: mapConditionToIcon(weatherMain),
-    description
+// Map weather codes to readable descriptions
+function mapWeatherCodeToDescription(weatherCode: number): string {
+  const map: Record<number, string> = {
+    1000: "Clear",
+    1100: "Mostly clear",
+    1101: "Partly cloudy",
+    1102: "Mostly cloudy",
+    1001: "Cloudy",
+    4000: "Drizzle",
+    4001: "Rain",
+    4200: "Light rain",
+    4201: "Heavy rain"
   };
+  return map[weatherCode] ?? "Mixed conditions";
 }
 
 /**
- * Fetch a 5-day forecast for a city and return a map:
- *   { "YYYY-MM-DD": SimpleWeather, ... }
+ * Fetch daily forecasts from Tomorrow.io for a given city + date list.
  *
- * You can then look up each cruise day by its ISO date string.
+ * NOTE: Free forecast covers only the next several days from *today*.
+ * Only sail dates within that window will get real API data.
  */
 export async function getDailyForecastsForCity(
   city: string,
   dates: string[]
 ): Promise<Record<string, SimpleWeather>> {
-  console.log("FETCHING DAILY WEATHER FOR CITY:", city, "DATES:", dates);
+  console.log("FETCHING DAILY WEATHER (Tomorrow.io) FOR:", city, dates);
 
-  const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
-  console.log("ENV KEY PREFIX:", String(apiKey).slice(0, 5));
+  const apiKey = import.meta.env.VITE_TOMORROW_API_KEY;
+  console.log("API KEY PREFIX:", String(apiKey).slice(0, 5));
 
   if (!apiKey) {
-    throw new Error("Missing VITE_WEATHER_API_KEY in .env.local or Vercel.");
+    throw new Error("Missing VITE_TOMORROW_API_KEY");
   }
 
-  const url = `${API_BASE}/forecast?q=${encodeURIComponent(
-    city
-  )}&units=imperial&appid=${apiKey}`;
+  // Normalize something like "Miami (Embarkation)" -> "miami"
+  const normalized = city
+    .toLowerCase()
+    .split("(")[0]
+    .split(",")[0]
+    .trim();
+
+  // Known cruise homeports with fixed coordinates
+  const coordsByCity: Record<string, { lat: number; lon: number }> = {
+    miami: { lat: 25.7617, lon: -80.1918 },
+    "port canaveral": { lat: 28.4108, lon: -80.6188 },
+    galveston: { lat: 29.3013, lon: -94.7977 },
+    tampa: { lat: 27.9506, lon: -82.4572 }
+  };
+
+  const coords = coordsByCity[normalized] ?? coordsByCity["miami"];
+  const { lat, lon } = coords;
+
+  const params = new URLSearchParams({
+    location: `${lat},${lon}`, // force correct lat/lon
+    timesteps: "1d",
+    units: "imperial",
+    apikey: apiKey as string
+  });
+
+  const url = `${API_BASE}?${params.toString()}`;
+  console.log("Tomorrow.io URL:", url);
 
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Weather API error: ${res.status}`);
+    const errorText = await res.text().catch(() => "");
+    console.error("Tomorrow.io API error:", res.status, errorText);
+    throw new Error(`Tomorrow.io API error: ${res.status}`);
   }
 
   const data = await res.json();
-  console.log("Weather API raw data:", data);
-
-  // Group all entries by date (YYYY-MM-DD)
-  const byDate: Record<string, any[]> = {};
-
-  data.list.forEach((entry: any) => {
-    const dtTxt = String(entry.dt_txt); // "2025-12-01 12:00:00"
-    const dateKey = dtTxt.slice(0, 10); // "2025-12-01"
-    if (!byDate[dateKey]) byDate[dateKey] = [];
-    byDate[dateKey].push(entry);
-  });
+  console.log("Tomorrow.io raw data:", data);
 
   const result: Record<string, SimpleWeather> = {};
 
-  // Only compute days we actually care about
-  dates.forEach((dateKey) => {
-    const entriesForDay = byDate[dateKey];
-    if (entriesForDay && entriesForDay.length > 0) {
-      result[dateKey] = aggregateDay(entriesForDay);
+  // Forecast response shape: { timelines: { daily: [ { time, values }, ... ], ... } }
+  const timelinesObj = data?.timelines ?? data?.data?.timelines;
+  if (!timelinesObj) {
+    console.warn("No timelines object in Tomorrow.io response");
+    return result;
+  }
+
+  const dailyIntervals: any[] = timelinesObj.daily || [];
+  if (!Array.isArray(dailyIntervals)) {
+    console.warn("Daily intervals is not an array:", dailyIntervals);
+    return result;
+  }
+
+  dailyIntervals.forEach((interval: any) => {
+    const timeStr: string = interval.time || interval.startTime;
+    if (!timeStr) return;
+
+    const dateKey = timeStr.slice(0, 10); // "YYYY-MM-DD"
+    const v = interval.values ?? {};
+
+    const tempMax =
+      v.temperatureMax ?? v.temperatureAvg ?? v.temperature ?? 0;
+    const tempMin =
+      v.temperatureMin ?? v.temperatureAvg ?? v.temperature ?? 0;
+
+    const rainChance =
+      v.precipitationProbability ?? v.precipitationProbabilityAvg ?? 0;
+
+    const weatherCode = v.weatherCode ?? v.weatherCodeMax ?? 0;
+
+    // Only keep dates that match the cruise dates we care about
+    if (dates.length > 0 && !dates.includes(dateKey)) {
+      return;
     }
+
+    result[dateKey] = {
+      high: Math.round(tempMax),
+      low: Math.round(tempMin),
+      rainChance: Math.round(rainChance),
+      icon: mapWeatherCodeToIcon(weatherCode),
+      description: mapWeatherCodeToDescription(weatherCode)
+    };
   });
 
-  console.log("Aggregated daily forecasts:", result);
-
+  console.log("FINAL DAILY FORECASTS:", result);
   return result;
 }
