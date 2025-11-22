@@ -7,3 +7,62 @@
   max-width: none;
   text-align: initial;
 }
+
+/* Overall padding tweaks */
+.app-shell {
+  padding: 1.5rem 1rem;
+}
+
+/* Main cards on mobile */
+.main-card {
+  padding: 16px 14px 20px;
+}
+
+.results-card {
+  padding: 12px 14px;
+}
+
+/* Center header + tagline on mobile */
+.cc-header {
+  justify-content: center;
+  text-align: center;
+}
+
+.cc-logo {
+  margin: 0 auto;
+  display: block;
+}
+
+.cc-tagline {
+  text-align: center;
+  width: 100%;
+}
+
+/* Desktop: restore spacing + left/right layout */
+@media (min-width: 768px) {
+  .app-shell {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .main-card {
+    padding: 24px 24px 28px;
+  }
+
+  .results-card {
+    padding: 16px 20px;
+  }
+
+  .cc-header {
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .cc-logo {
+    margin: 0;
+  }
+
+  .cc-tagline {
+    text-align: right;
+    width: auto;
+  }
+}

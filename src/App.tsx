@@ -34,7 +34,6 @@ type ItineraryDay = {
 // --- helper: strip "(code 4000)" etc from descriptions ---
 function cleanDescription(text?: string): string {
   if (!text) return "";
-  // Remove patterns like "(code 4000)" (any digits)
   return text.replace(/\(code\s*\d+\)/gi, "").trim();
 }
 
@@ -56,7 +55,6 @@ export default function App() {
   );
 
   // Cruises to show in the "Matching cruises" list.
-  // If one is selected, hide it from the list.
   const visibleResults = selectedCruise
     ? searchResults.filter((c) => c.id !== selectedCruise.id)
     : searchResults;
@@ -88,7 +86,6 @@ export default function App() {
     try {
       const results = await searchCruisesByDate(sailDate);
 
-      // Filter to match selected line + ship if names are provided
       const filtered = results.filter((c) => {
         if (lineName && c.cruiseLine !== lineName) return false;
         if (shipName && c.shipName !== shipName) return false;
@@ -172,7 +169,6 @@ export default function App() {
             low: forecast.low,
             rainChance: forecast.rainChance,
             icon: forecast.icon,
-            // cleaned so "(code 4000)" is removed
             description: cleanDescription(forecast.description),
           };
         });
@@ -204,6 +200,7 @@ export default function App() {
   // ---------- UI ----------
   return (
     <div
+      className="app-shell"
       style={{
         minHeight: "100vh",
         margin: 0,
@@ -216,29 +213,32 @@ export default function App() {
     >
       {/* HEADER */}
       <header
+        className="cc-header"
         style={{
           maxWidth: "1040px",
           margin: "0 auto 2rem auto",
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1.5rem",
+          gap: "1rem",
         }}
       >
         <img
           src="/cruisecast-logo.webp"
           alt="CruiseCast"
-          style={{ height: "54px", objectFit: "contain" }}
+          className="cc-logo"
+          style={{ height: "48px", objectFit: "contain" }}
         />
 
         <div
+          className="cc-tagline"
           style={{
-            textAlign: "right",
             color: "white",
-            fontSize: "11px",
+            fontSize: "10px",
             fontWeight: 600,
-            letterSpacing: "0.2em",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
+            flex: "1 1 160px",
           }}
         >
           Plan Ahead • Sail Smart
@@ -269,20 +269,21 @@ export default function App() {
         <div style={{ width: "100%", maxWidth: "1040px" }}>
           {/* MAIN CARD */}
           <section
+            className="main-card"
             style={{
               width: "100%",
               background: "rgba(255,255,255,0.96)",
               borderRadius: "18px",
-              padding: "24px 24px 28px",
+              padding: "20px 16px 22px",
               boxShadow: "0 24px 60px rgba(0,0,0,0.22)",
               border: "1px solid rgba(255,255,255,0.7)",
             }}
           >
             <h1
               style={{
-                fontSize: "24px",
+                fontSize: "20px",
                 lineHeight: 1.2,
-                margin: "0 0 18px 0",
+                margin: "0 0 14px 0",
                 color: "#324A6D",
               }}
             >
@@ -318,13 +319,13 @@ export default function App() {
               </p>
             )}
 
-            <div style={{ marginTop: "22px", color: "#324A6D" }}>
+            <div style={{ marginTop: "18px", color: "#324A6D" }}>
               {selectedCruise ? (
                 <div>
                   <h2
                     style={{
-                      fontSize: "18px",
-                      margin: "0 0 6px 0",
+                      fontSize: "16px",
+                      margin: "0 0 4px 0",
                       fontWeight: 600,
                     }}
                   >
@@ -378,6 +379,8 @@ export default function App() {
                         borderRadius: "12px",
                         background: "rgba(248,250,252,0.9)",
                         padding: "10px",
+                        maxHeight: "380px",
+                        overflowY: "auto",
                       }}
                     >
                       <WeatherTimeline itinerary={itinerary} />
@@ -388,8 +391,8 @@ export default function App() {
                 <>
                   <h2
                     style={{
-                      fontSize: "18px",
-                      margin: "0 0 6px 0",
+                      fontSize: "16px",
+                      margin: "0 0 4px 0",
                       fontWeight: 600,
                     }}
                   >
@@ -424,23 +427,24 @@ export default function App() {
           {/* RESULTS CARD */}
           {hasSubmitted && visibleResults.length > 0 && (
             <section
+              className="results-card"
               style={{
-                marginTop: "18px",
+                marginTop: "14px",
                 background: "rgba(255,255,255,0.96)",
                 borderRadius: "16px",
-                padding: "16px 20px",
+                padding: "14px 16px",
                 boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
                 border: "1px solid rgba(255,255,255,0.7)",
               }}
             >
               <h2
                 style={{
-                  fontSize: "14px",
+                  fontSize: "13px",
                   fontWeight: 600,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                   color: "#324A6D",
-                  margin: "0 0 10px 0",
+                  margin: "0 0 8px 0",
                 }}
               >
                 Matching cruises
@@ -459,10 +463,10 @@ export default function App() {
             !error && (
               <section
                 style={{
-                  marginTop: "18px",
+                  marginTop: "14px",
                   background: "rgba(255,255,255,0.96)",
                   borderRadius: "16px",
-                  padding: "14px 18px",
+                  padding: "12px 16px",
                   boxShadow: "0 20px 50px rgba(0,0,0,0.14)",
                   border: "1px solid rgba(255,255,255,0.7)",
                   fontSize: "13px",
@@ -479,7 +483,7 @@ export default function App() {
       {/* FOOTER */}
       <footer
         style={{
-          marginTop: "1.25rem",
+          marginTop: "1rem",
           textAlign: "center",
           fontSize: "11px",
           color: "rgba(255,255,255,0.9)",
