@@ -1,93 +1,99 @@
+// src/components/WeatherTimeline.tsx
 import React from "react";
 
-// Helper: turn "YYYY-MM-DD" into a local date string without timezone bugs
-function formatLocalDateFromIso(isoDate?: string) {
-  if (!isoDate) return "";
-  try {
-    const [year, month, day] = isoDate.split("-").map(Number);
-    const localDate = new Date(year, month - 1, day);
-    return localDate.toLocaleDateString();
-  } catch {
-    return isoDate;
+type ItineraryDay = {
+  day: number;
+  date?: string;
+  location: string;
+  high?: number;
+  low?: number;
+  rainChance?: number;
+  icon?: "sunny" | "partly" | "cloudy" | "rain";
+  description?: string;
+};
+
+type Props = {
+  itinerary: ItineraryDay[];
+};
+
+function getIconEmoji(icon?: ItineraryDay["icon"]) {
+  switch (icon) {
+    case "sunny":
+      return "☀️";
+    case "partly":
+      return "⛅";
+    case "cloudy":
+      return "☁️";
+    case "rain":
+      return "🌧️";
+    default:
+      return "🌤️";
   }
 }
 
-// Helper: pick an emoji based on the icon string
-function getEmojiForIcon(icon?: string) {
-  const key = (icon || "").toLowerCase();
-  if (key.includes("rain") || key === "rain") return "🌧️";
-  if (key.includes("cloud") || key === "cloudy") return "☁️";
-  if (key.includes("sun") || key === "sunny" || key === "clear") return "☀️";
-  if (key.includes("part")) return "⛅"; // partly cloudy etc.
-  return "⛅";
-}
-
-const WeatherTimeline = ({ itinerary }) => {
-  if (!itinerary || itinerary.length === 0) return null;
+const WeatherTimeline: React.FC<Props> = ({ itinerary }) => {
+  if (!itinerary || itinerary.length === 0) {
+    return (
+      <p className="text-xs text-slate-200">
+        No itinerary details available for this cruise.
+      </p>
+    );
+  }
 
   return (
-    <section className="mt-6 rounded-xl bg-white/90 p-4 shadow-md">
-      <h2 className="mb-4 text-lg font-semibold text-slate-800">
-        Your Cruise Forecast
-      </h2>
+    <ol className="space-y-2">
+      {itinerary.map((day) => (
+        <li
+          key={day.day}
+          className="flex items-stretch gap-3 rounded-xl bg-white/5 p-3 text-xs text-slate-100 md:text-sm"
+        >
+          {/* Day + bigger icon */}
+          <div className="flex flex-col items-center justify-center rounded-lg bg-[#1F7ECE]/80 px-3 py-2 text-[11px] font-semibold text-white">
+            <span className="text-[10px] uppercase tracking-wide">
+              Day {day.day}
+            </span>
+            <span className="mt-1 text-3xl leading-none">
+              {getIconEmoji(day.icon)}
+            </span>
+          </div>
 
-      {/* GRID: 1 column on mobile, 3 side-by-side on md+ */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {itinerary.map((day) => {
-          const dateLabel = formatLocalDateFromIso(day.date);
-          const emoji = getEmojiForIcon(day.icon);
-
-          return (
-            <div
-              key={day.dayNumber}
-              className="flex h-full flex-col justify-between rounded-lg border border-slate-200 bg-sky-50/70 p-3"
-            >
-              {/* Top: day, port, date */}
+          {/* Main info */}
+          <div className="flex-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-1">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-                  Day {day.dayNumber}
-                </div>
-                <div className="text-sm font-medium text-slate-900">
-                  {day.location}
-                </div>
-                <div className="text-xs text-slate-500">{dateLabel}</div>
+                <p className="font-semibold text-slate-100">
+                  {day.location || "At sea"}
+                </p>
+                {day.date && (
+                  <p className="text-[11px] text-slate-200/90">{day.date}</p>
+                )}
               </div>
 
-              {/* Bottom: temps + emoji + description */}
-              <div className="mt-3 flex items-end justify-between gap-2">
-                <div className="text-sm text-slate-800">
-                  <div>
-                    High:{" "}
-                    <span className="font-semibold">
-                      {day.high != null ? `${day.high}°F` : "--"}
-                    </span>
-                  </div>
-                  <div>
-                    Low:{" "}
-                    <span className="font-semibold">
-                      {day.low != null ? `${day.low}°F` : "--"}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    Rain chance:{" "}
-                    <span className="font-semibold">
-                      {day.rainChance != null ? `${day.rainChance}%` : "--"}
-                    </span>
-                  </div>
+              {(day.high !== undefined || day.low !== undefined) && (
+                <div className="text-right text-[11px] leading-tight md:text-xs">
+                  {day.high !== undefined && day.low !== undefined && (
+                    <p className="font-semibold">
+                      {Math.round(day.high)}° / {Math.round(day.low)}°
+                    </p>
+                  )}
+                  {day.rainChance !== undefined && (
+                    <p className="text-slate-200/90">
+                      {Math.round(day.rainChance)}% chance of rain
+                    </p>
+                  )}
                 </div>
-
-                <div className="flex flex-col items-center text-right">
-                  <div className="text-3xl leading-none">{emoji}</div>
-                  <div className="mt-1 max-w-[160px] text-xs font-medium text-slate-700">
-                    {day.description}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          );
-        })}
-      </div>
-    </section>
+
+            {day.description && (
+              <p className="mt-1 text-[11px] text-slate-200/90">
+                {day.description}
+              </p>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 };
 

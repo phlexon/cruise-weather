@@ -1,118 +1,492 @@
+// src/App.tsx
 import React, { useState } from "react";
 import CruiseForm from "./components/CruiseForm";
+import CruiseResults from "./components/CruiseResults";
 import WeatherTimeline from "./components/WeatherTimeline";
-import { sampleItinerary } from "./data/mockData";
+import {
+  searchCruisesByDate,
+  getItineraryFromApify,
+  type CruiseSummary,
+  type CruiseDay,
+} from "./services/cruiseApi";
 import { getDailyForecastsForCity } from "./services/weather";
+import { sampleItinerary } from "./data/mockData";
 
 type CruiseSelection = {
   lineId: string;
   shipId: string;
-  sailDate: string; // "YYYY-MM-DD"
+  sailDate: string;
+  lineName?: string;
+  shipName?: string;
 };
 
-function App() {
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [itinerary, setItinerary] = useState(sampleItinerary);
+type ItineraryDay = {
+  day: number;
+  date?: string;
+  location: string;
+  high?: number;
+  low?: number;
+  rainChance?: number;
+  icon?: "sunny" | "partly" | "cloudy" | "rain";
+  description?: string;
+};
 
-  const handleCruiseSubmit = async ({ sailDate }: CruiseSelection) => {
-    setLoading(true);
+// --- helper: strip "(code 4000)" etc from descriptions ---
+function cleanDescription(text?: string): string {
+  if (!text) return "";
+  // Remove patterns like "(code 4000)" (any digits)
+  return text.replace(/\(code\s*\d+\)/gi, "").trim();
+}
+
+export default function App() {
+  const [searchResults, setSearchResults] = useState<CruiseSummary[]>([]);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const [error, setError] = useState<string | null>(null);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+
+  const [selectedCruise, setSelectedCruise] = useState<CruiseSummary | null>(
+    null
+  );
+  const [itinerary, setItinerary] = useState<ItineraryDay[]>(
+    sampleItinerary as unknown as ItineraryDay[]
+  );
+
+  // Cruises to show in the "Matching cruises" list.
+  // If one is selected, hide it from the list.
+  const visibleResults = selectedCruise
+    ? searchResults.filter((c) => c.id !== selectedCruise.id)
+    : searchResults;
+
+  // Map clicks on *visible* results back to the original searchResults array.
+  const handleVisibleResultClick = (visibleIndex: number) => {
+    const cruise = visibleResults[visibleIndex];
+    if (!cruise) return;
+
+    const originalIndex = searchResults.findIndex((c) => c.id === cruise.id);
+    if (originalIndex === -1) return;
+
+    handleResultClick(originalIndex);
+  };
+
+  // ---------- SEARCH ----------
+  const handleCruiseSubmit = async ({
+    lineName,
+    shipName,
+    sailDate,
+  }: CruiseSelection) => {
+    setLoadingSearch(true);
     setError(null);
+    setDetailsError(null);
+    setSelectedCruise(null);
+    setSearchResults([]);
+    setHasSubmitted(false);
 
     try {
-      const firstDay = sampleItinerary[0];
+      const results = await searchCruisesByDate(sailDate);
 
-      // Use the label to derive a city (e.g. "Miami (Embarkation)" -> "Miami")
-      const cityForApi = firstDay.location.split("(")[0].trim() || "Miami";
-
-      // Build a new itinerary with dates based on the sail date
-      const sailDateObj = new Date(sailDate);
-
-      const datedItinerary = sampleItinerary.map((day, index) => {
-        const d = new Date(sailDateObj);
-        d.setDate(d.getDate() + index); // Day 1 = sail date, Day 2 = +1, etc.
-        const isoDate = d.toISOString().slice(0, 10); // "YYYY-MM-DD"
-
-        return {
-          ...day,
-          date: isoDate
-        };
+      // Filter to match selected line + ship if names are provided
+      const filtered = results.filter((c) => {
+        if (lineName && c.cruiseLine !== lineName) return false;
+        if (shipName && c.shipName !== shipName) return false;
+        return true;
       });
 
-      const dates = datedItinerary.map((day) => day.date);
-      console.log("Using city/dates for API:", cityForApi, dates);
+      setSearchResults(filtered);
+      setHasSubmitted(true);
+    } catch (e) {
+      console.error("Error searching cruises:", e);
+      setError("There was a problem loading cruise results.");
+      setHasSubmitted(true);
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
 
-      // Fetch daily forecasts for all these dates in one shot
-      const forecastsByDate = await getDailyForecastsForCity(cityForApi, dates);
+  // ---------- CARD CLICK ----------
+  const handleResultClick = async (index: number) => {
+    const cruise = searchResults[index];
+    if (!cruise) return;
 
-      // Merge live weather into every day that has data
-      const updated = datedItinerary.map((day) => {
-        const forecast = forecastsByDate[day.date];
+    setSelectedCruise(cruise);
+    setLoadingDetails(true);
+    setDetailsError(null);
 
-        if (forecast) {
+    try {
+      const cruiseDays: CruiseDay[] = await getItineraryFromApify({
+        shipName: cruise.shipName,
+        sailDate: cruise.departIso,
+      });
+
+      let daysToUse = cruiseDays;
+
+      if (!daysToUse || daysToUse.length === 0) {
+        console.warn("No Apify itinerary found — using sampleItinerary");
+        daysToUse = (sampleItinerary as any[]).map(
+          (d: any, idx: number): CruiseDay => ({
+            dayNumber: idx + 1,
+            date: d.date,
+            portName:
+              d.location?.replace("(Embarkation)", "").trim() ?? d.location,
+            rawStopText: d.location,
+          })
+        );
+      }
+
+      let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
+        day: idx + 1,
+        date: day.date,
+        location: day.portName,
+        icon: "sunny",
+        description: "Loading weather…",
+      }));
+
+      try {
+        const dates = mapped
+          .map((d) => d.date)
+          .filter(Boolean) as string[];
+
+        const embarkationLocation = mapped[0]?.location ?? "Miami";
+        const embarkationCity = embarkationLocation.split(",")[0];
+
+        const forecastsByDate = await getDailyForecastsForCity(
+          embarkationCity,
+          dates
+        );
+
+        mapped = mapped.map((day) => {
+          if (!day.date) return day;
+          const forecast = forecastsByDate[day.date];
+          if (!forecast) {
+            return {
+              ...day,
+              description: "Weather not available for this day yet.",
+            };
+          }
           return {
             ...day,
             high: forecast.high,
             low: forecast.low,
             rainChance: forecast.rainChance,
             icon: forecast.icon,
-            description: `API (daily): ${forecast.description}`
+            // cleaned so "(code 4000)" is removed
+            description: cleanDescription(forecast.description),
           };
-        }
+        });
+      } catch (weatherErr) {
+        console.error("Weather provider failed, itinerary only:", weatherErr);
+        setDetailsError(
+          "Weather data is temporarily unavailable. Showing itinerary only."
+        );
 
-        // No forecast data for this date (e.g. beyond 5 days) → keep mock values
-        return day;
-      });
+        mapped = mapped.map((day) => ({
+          ...day,
+          description:
+            day.description === "Loading weather…"
+              ? "Weather not available right now."
+              : day.description,
+        }));
+      }
 
-      console.log("Final updated itinerary:", updated);
-
-      setItinerary(updated);
-      setHasSubmitted(true);
+      setItinerary(mapped);
     } catch (e) {
-      console.error("Weather error:", e);
-      setError("There was a problem loading the weather. Please try again.");
-      setHasSubmitted(true);
-      setItinerary(sampleItinerary);
+      console.error("Error loading cruise itinerary:", e);
+      setDetailsError("There was a problem loading the cruise itinerary.");
+      setItinerary(sampleItinerary as unknown as ItineraryDay[]);
     } finally {
-      setLoading(false);
+      setLoadingDetails(false);
     }
   };
 
+  // ---------- UI ----------
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-100 to-blue-200">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <header className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 md:text-4xl">
-            Cruise Weather Companion
-          </h1>
-          <p className="mt-2 text-sm text-slate-700 md:text-base">
-            Pick your cruise and get a simple, clean forecast for every day of your sailing.
-          </p>
-        </header>
+    <div
+      style={{
+        minHeight: "100vh",
+        margin: 0,
+        padding: "2.5rem 1.5rem",
+        background:
+          "linear-gradient(to bottom, #324A6D 0%, #1F7ECE 45%, #F4D7A1 100%)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* HEADER */}
+      <header
+        style={{
+          maxWidth: "1040px",
+          margin: "0 auto 2rem auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "1.5rem",
+        }}
+      >
+        <img
+          src="/cruisecast-logo.webp"
+          alt="CruiseCast"
+          style={{ height: "54px", objectFit: "contain" }}
+        />
 
-        <CruiseForm onSubmit={handleCruiseSubmit} />
+        <div
+          style={{
+            textAlign: "right",
+            color: "white",
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+          }}
+        >
+          Plan Ahead • Sail Smart
+          <div
+            style={{
+              marginTop: "4px",
+              fontSize: "12px",
+              letterSpacing: 0,
+              fontWeight: 400,
+              opacity: 0.9,
+            }}
+          >
+            Forecast your cruise day by day — itineraries from real sailings,
+            weather from Tomorrow.io.
+          </div>
+        </div>
+      </header>
 
-        {loading && (
-          <p className="mt-4 text-center text-sm text-slate-700">
-            Loading weather forecast...
-          </p>
-        )}
+      {/* MAIN */}
+      <main
+        style={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "1040px" }}>
+          {/* MAIN CARD */}
+          <section
+            style={{
+              width: "100%",
+              background: "rgba(255,255,255,0.96)",
+              borderRadius: "18px",
+              padding: "24px 24px 28px",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.22)",
+              border: "1px solid rgba(255,255,255,0.7)",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: "24px",
+                lineHeight: 1.2,
+                margin: "0 0 18px 0",
+                color: "#324A6D",
+              }}
+            >
+              Check Your Cruise Weather
+            </h1>
 
-        {error && (
-          <p className="mt-2 text-center text-sm text-red-600">
-            {error}
-          </p>
-        )}
+            <CruiseForm onSubmit={handleCruiseSubmit} />
 
-        {hasSubmitted && <WeatherTimeline itinerary={itinerary} />}
+            {loadingSearch && (
+              <p
+                style={{
+                  marginTop: "10px",
+                  fontSize: "12px",
+                  textAlign: "center",
+                  color: "#324A6D",
+                }}
+              >
+                Loading cruise data...
+              </p>
+            )}
 
-        <footer className="mt-10 text-center text-xs text-slate-600">
-          v0.4 — All cruise days use daily-style live weather (where available).
-        </footer>
-      </div>
+            {error && (
+              <p
+                style={{
+                  marginTop: "8px",
+                  fontSize: "12px",
+                  textAlign: "center",
+                  color: "#b91c1c",
+                  fontWeight: 500,
+                }}
+              >
+                {error}
+              </p>
+            )}
+
+            <div style={{ marginTop: "22px", color: "#324A6D" }}>
+              {selectedCruise ? (
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "18px",
+                      margin: "0 0 6px 0",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Selected cruise & daily weather
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      margin: "0 0 8px 0",
+                      opacity: 0.85,
+                    }}
+                  >
+                    {selectedCruise.title}
+                    {selectedCruise.shipName
+                      ? ` · Ship: ${selectedCruise.shipName}`
+                      : ""}
+                    {selectedCruise.cruiseLine
+                      ? ` · Line: ${selectedCruise.cruiseLine}`
+                      : ""}
+                  </p>
+
+                  {loadingDetails && (
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        marginTop: "6px",
+                        color: "#324A6D",
+                      }}
+                    >
+                      Loading itinerary & weather...
+                    </p>
+                  )}
+
+                  {detailsError && (
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        marginTop: "6px",
+                        color: "#b91c1c",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {detailsError}
+                    </p>
+                  )}
+
+                  {!loadingDetails && (
+                    <div
+                      style={{
+                        marginTop: "10px",
+                        borderRadius: "12px",
+                        background: "rgba(248,250,252,0.9)",
+                        padding: "10px",
+                      }}
+                    >
+                      <WeatherTimeline itinerary={itinerary} />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <h2
+                    style={{
+                      fontSize: "18px",
+                      margin: "0 0 6px 0",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Your cruise, day by day.
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      margin: "0 0 6px 0",
+                      opacity: 0.9,
+                    }}
+                  >
+                    Choose your cruise to see each port stop with high/low
+                    temperatures and rain chances — all in one clean view.
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      margin: 0,
+                      fontStyle: "italic",
+                      opacity: 0.75,
+                    }}
+                  >
+                    Tip: Start by picking your cruise line, then ship, then sail
+                    date.
+                  </p>
+                </>
+              )}
+            </div>
+          </section>
+
+          {/* RESULTS CARD */}
+          {hasSubmitted && visibleResults.length > 0 && (
+            <section
+              style={{
+                marginTop: "18px",
+                background: "rgba(255,255,255,0.96)",
+                borderRadius: "16px",
+                padding: "16px 20px",
+                boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
+                border: "1px solid rgba(255,255,255,0.7)",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "#324A6D",
+                  margin: "0 0 10px 0",
+                }}
+              >
+                Matching cruises
+              </h2>
+              <CruiseResults
+                results={visibleResults}
+                onSelect={handleVisibleResultClick}
+                selectedIndex={null}
+              />
+            </section>
+          )}
+
+          {hasSubmitted &&
+            !loadingSearch &&
+            searchResults.length === 0 &&
+            !error && (
+              <section
+                style={{
+                  marginTop: "18px",
+                  background: "rgba(255,255,255,0.96)",
+                  borderRadius: "16px",
+                  padding: "14px 18px",
+                  boxShadow: "0 20px 50px rgba(0,0,0,0.14)",
+                  border: "1px solid rgba(255,255,255,0.7)",
+                  fontSize: "13px",
+                  color: "#374151",
+                }}
+              >
+                No cruises found for that ship and date. Try adjusting your
+                selection.
+              </section>
+            )}
+        </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer
+        style={{
+          marginTop: "1.25rem",
+          textAlign: "center",
+          fontSize: "11px",
+          color: "rgba(255,255,255,0.9)",
+        }}
+      >
+        v1.0 — Cruises & itineraries from Apify, weather by Tomorrow.io.
+      </footer>
     </div>
   );
 }
-
-export default App;

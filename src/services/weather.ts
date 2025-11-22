@@ -1,6 +1,9 @@
-const API_BASE = "https://api.tomorrow.io/v4/weather/forecast";
+// src/services/weather.ts
+// Weather service using Tomorrow.io v4 Daily Forecast API
+// Now with simple in-memory caching per browser session.
 
-export type SimpleWeather = {
+export type DailyForecast = {
+  date: string; // "YYYY-MM-DD"
   high: number;
   low: number;
   rainChance: number;
@@ -8,133 +11,181 @@ export type SimpleWeather = {
   description: string;
 };
 
-// Map Tomorrow.io weather codes to icon types
-function mapWeatherCodeToIcon(weatherCode: number): SimpleWeather["icon"] {
-  if ([4000, 4001, 4200, 4201].includes(weatherCode)) return "rain"; // drizzle/rain
-  if ([1001, 1102].includes(weatherCode)) return "cloudy"; // cloudy/mostly cloudy
-  if ([1000, 1100, 1101].includes(weatherCode)) return "sunny"; // clear/mostly clear/partly
+const TOMORROW_API_KEY: string | undefined =
+  import.meta.env.VITE_TOMORROW_API_KEY;
+
+// In-memory cache: key -> Record<isoDate, DailyForecast>
+const weatherCache = new Map<string, Record<string, DailyForecast>>();
+
+// Some manual fallbacks for tricky port names
+const LOCATION_FALLBACKS: Record<string, string> = {
+  "Port Canaveral": "Cape Canaveral, FL",
+  "Perfect Day at CocoCay": "Coco Cay, Bahamas",
+  CocoCay: "Coco Cay, Bahamas"
+};
+
+function mapWeatherCodeToIcon(code: number | undefined): DailyForecast["icon"] {
+  if (code == null) return "partly";
+
+  // Very rough mapping, enough for simple icons
+  if (code >= 4000 && code < 5000) return "rain"; // drizzle/rain
+  if (code >= 1001 && code < 2000) return "cloudy"; // cloudy
+  if (code >= 1100 && code <= 1102) return "partly"; // partly cloudy
+  if (code === 1000) return "sunny"; // clear
   return "partly";
 }
 
-// Map weather codes to readable descriptions
-function mapWeatherCodeToDescription(weatherCode: number): string {
-  const map: Record<number, string> = {
-    1000: "Clear",
-    1100: "Mostly clear",
-    1101: "Partly cloudy",
-    1102: "Mostly cloudy",
-    1001: "Cloudy",
-    4000: "Drizzle",
-    4001: "Rain",
-    4200: "Light rain",
-    4201: "Heavy rain"
-  };
-  return map[weatherCode] ?? "Mixed conditions";
+/**
+ * Build a location string suitable for Tomorrow.io's `location=` param.
+ * We pass a human-readable location rather than lat/lon and let Tomorrow handle it,
+ * with a few manual cleanups for cruise-style port names.
+ */
+function buildLocationQuery(rawCity: string): string {
+  const trimmed = rawCity.trim();
+  const mapped = LOCATION_FALLBACKS[trimmed];
+  if (mapped) return mapped;
+
+  // If it starts with "Port X", also try "X" internally on their side
+  if (/^port\s+/i.test(trimmed)) {
+    const withoutPort = trimmed.replace(/^port\s+/i, "").trim();
+    if (withoutPort) {
+      return withoutPort;
+    }
+  }
+
+  // Default: just use the raw city name
+  return trimmed;
 }
 
 /**
- * Fetch daily forecasts from Tomorrow.io for a given city + date list.
- *
- * NOTE: Free forecast covers only the next several days from *today*.
- * Only sail dates within that window will get real API data.
+ * Fetch daily forecasts for a "city" / location name and return a map keyed by ISO date ("YYYY-MM-DD").
+ * Only the dates in the `dates` array are included in the result.
+ * Uses a simple in-memory cache so repeated clicks for the same city+dates don't hit the API again.
  */
 export async function getDailyForecastsForCity(
   city: string,
   dates: string[]
-): Promise<Record<string, SimpleWeather>> {
-  console.log("FETCHING DAILY WEATHER (Tomorrow.io) FOR:", city, dates);
-
-  const apiKey = import.meta.env.VITE_TOMORROW_API_KEY;
-  console.log("API KEY PREFIX:", String(apiKey).slice(0, 5));
-
-  if (!apiKey) {
-    throw new Error("Missing VITE_TOMORROW_API_KEY");
+): Promise<Record<string, DailyForecast>> {
+  if (!TOMORROW_API_KEY) {
+    console.error("VITE_TOMORROW_API_KEY is missing.");
+    throw new Error("Tomorrow.io API key is not configured.");
   }
 
-  // Normalize something like "Miami (Embarkation)" -> "miami"
-  const normalized = city
-    .toLowerCase()
-    .split("(")[0]
-    .split(",")[0]
-    .trim();
+  if (!dates || dates.length === 0) {
+    return {};
+  }
 
-  // Known cruise homeports with fixed coordinates
-  const coordsByCity: Record<string, { lat: number; lon: number }> = {
-    miami: { lat: 25.7617, lon: -80.1918 },
-    "port canaveral": { lat: 28.4108, lon: -80.6188 },
-    galveston: { lat: 29.3013, lon: -94.7977 },
-    tampa: { lat: 27.9506, lon: -82.4572 }
-  };
+  const locationQuery = buildLocationQuery(city);
 
-  const coords = coordsByCity[normalized] ?? coordsByCity["miami"];
-  const { lat, lon } = coords;
+  // 🔑 Build a stable cache key: location + sorted dates
+  const sortedDates = [...dates].sort();
+  const cacheKey = `${locationQuery}|${sortedDates.join(",")}`;
 
-  const params = new URLSearchParams({
-    location: `${lat},${lon}`, // force correct lat/lon
-    timesteps: "1d",
-    units: "imperial",
-    apikey: apiKey as string
-  });
+  // 🔁 Check cache first
+  const cached = weatherCache.get(cacheKey);
+  if (cached) {
+    console.log("Tomorrow.io cache hit for:", cacheKey, cached);
+    return cached;
+  }
 
-  const url = `${API_BASE}?${params.toString()}`;
+  console.log(
+    "FETCHING DAILY WEATHER (Tomorrow.io) FOR (cache miss):",
+    locationQuery,
+    dates
+  );
+
+  const url = `https://api.tomorrow.io/v4/weather/forecast?location=${encodeURIComponent(
+    locationQuery
+  )}&timesteps=1d&units=imperial&apikey=${TOMORROW_API_KEY}`;
+
   console.log("Tomorrow.io URL:", url);
 
   const res = await fetch(url);
+  const text = await res.text().catch(() => "");
+
   if (!res.ok) {
-    const errorText = await res.text().catch(() => "");
-    console.error("Tomorrow.io API error:", res.status, errorText);
+    console.error("Tomorrow.io API error:", res.status, text);
     throw new Error(`Tomorrow.io API error: ${res.status}`);
   }
 
-  const data = await res.json();
-  console.log("Tomorrow.io raw data:", data);
-
-  const result: Record<string, SimpleWeather> = {};
-
-  // Forecast response shape: { timelines: { daily: [ { time, values }, ... ], ... } }
-  const timelinesObj = data?.timelines ?? data?.data?.timelines;
-  if (!timelinesObj) {
-    console.warn("No timelines object in Tomorrow.io response");
-    return result;
-  }
-
-  const dailyIntervals: any[] = timelinesObj.daily || [];
-  if (!Array.isArray(dailyIntervals)) {
-    console.warn("Daily intervals is not an array:", dailyIntervals);
-    return result;
-  }
-
-  dailyIntervals.forEach((interval: any) => {
-    const timeStr: string = interval.time || interval.startTime;
-    if (!timeStr) return;
-
-    const dateKey = timeStr.slice(0, 10); // "YYYY-MM-DD"
-    const v = interval.values ?? {};
-
-    const tempMax =
-      v.temperatureMax ?? v.temperatureAvg ?? v.temperature ?? 0;
-    const tempMin =
-      v.temperatureMin ?? v.temperatureAvg ?? v.temperature ?? 0;
-
-    const rainChance =
-      v.precipitationProbability ?? v.precipitationProbabilityAvg ?? 0;
-
-    const weatherCode = v.weatherCode ?? v.weatherCodeMax ?? 0;
-
-    // Only keep dates that match the cruise dates we care about
-    if (dates.length > 0 && !dates.includes(dateKey)) {
-      return;
-    }
-
-    result[dateKey] = {
-      high: Math.round(tempMax),
-      low: Math.round(tempMin),
-      rainChance: Math.round(rainChance),
-      icon: mapWeatherCodeToIcon(weatherCode),
-      description: mapWeatherCodeToDescription(weatherCode)
+  type TomorrowDaily = {
+    time: string; // ISO datetime
+    values: {
+      temperatureMax?: number;
+      temperatureMin?: number;
+      temperatureApparentMax?: number;
+      temperatureApparentMin?: number;
+      temperatureAvg?: number;
+      precipitationProbability?: number;
+      precipitationProbabilityAvg?: number;
+      weatherCode?: number;
+      weatherCodeMax?: number;
     };
-  });
+  };
 
-  console.log("FINAL DAILY FORECASTS:", result);
-  return result;
+  const data = JSON.parse(text) as {
+    timelines?: {
+      daily?: TomorrowDaily[];
+    };
+  };
+
+  const daily = data.timelines?.daily ?? [];
+  if (!daily.length) {
+    console.warn("Tomorrow.io returned no daily data.");
+    return {};
+  }
+
+  const all: Record<string, DailyForecast> = {};
+
+  for (const d of daily) {
+    const iso = d.time.slice(0, 10); // YYYY-MM-DD
+    const v = d.values || {};
+
+    const high =
+      v.temperatureMax ??
+      v.temperatureApparentMax ??
+      v.temperatureAvg ??
+      0;
+    const low =
+      v.temperatureMin ??
+      v.temperatureApparentMin ??
+      v.temperatureAvg ??
+      0;
+
+    const rainProbRaw =
+      v.precipitationProbability ??
+      v.precipitationProbabilityAvg ??
+      0;
+
+    const weatherCode = v.weatherCode ?? v.weatherCodeMax;
+    const icon = mapWeatherCodeToIcon(weatherCode);
+
+    all[iso] = {
+      date: iso,
+      high,
+      low,
+      rainChance: rainProbRaw,
+      icon,
+      description: `Tomorrow.io daily forecast (code ${
+        weatherCode ?? "n/a"
+      })`
+    };
+  }
+
+  // Filter to just the dates we care about
+  const wanted = new Set(dates);
+  const filtered: Record<string, DailyForecast> = {};
+
+  for (const [iso, forecast] of Object.entries(all)) {
+    if (wanted.has(iso)) {
+      filtered[iso] = forecast;
+    }
+  }
+
+  console.log("Tomorrow.io mapped daily forecasts:", filtered);
+
+  // 💾 Store in cache before returning
+  weatherCache.set(cacheKey, filtered);
+
+  return filtered;
 }
