@@ -16,12 +16,28 @@ type CruiseFormProps = {
   }) => void;
 };
 
+const ALLOWED_CRUISE_LINES = new Set<string>([
+  "Carnival Cruise Line Cruises",
+  "Celebrity Cruises",
+  "Disney Cruise Line Cruises",
+  "Holland America Cruises",
+  "Margaritaville at Sea Cruises",
+  "MSC Cruises",
+  "Norwegian Cruise Line Cruises",
+  "Princess Cruises",
+  "Royal Caribbean Cruises",
+  "Silversea Cruises",
+  "Viking Cruises",
+  "Virgin Voyages Cruises",
+]);
+
 const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
   const [lines, setLines] = useState<CruiseLineOption[]>([]);
   const [ships, setShips] = useState<ShipOption[]>([]);
-  const [lineId, setLineId] = useState<string>("");
-  const [shipId, setShipId] = useState<string>("");
+  const [lineId, setLineId] = useState<string>(""); // start empty
+  const [shipId, setShipId] = useState<string>(""); // start empty
   const [sailDate, setSailDate] = useState<string>("");
+
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [optionsError, setOptionsError] = useState<string | null>(null);
 
@@ -34,24 +50,31 @@ const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
         setLoadingOptions(true);
         setOptionsError(null);
 
-        const { lines, ships } = await getCruiseOptionsFromApify();
+        const { lines: apiLines, ships: apiShips } =
+          await getCruiseOptionsFromApify();
         if (cancelled) return;
 
-        setLines(lines);
-        setShips(ships);
+        // Sort alphabetically by name
+        const sortedLines = [...apiLines].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+        const sortedShips = [...apiShips].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
 
-        // Default to first line & matching first ship
-        if (lines.length > 0) {
-          const firstLineId = lines[0].id;
-          setLineId(firstLineId);
+        // Whitelist only the allowed cruise lines by name
+        const allowedLines = sortedLines.filter((line) =>
+          ALLOWED_CRUISE_LINES.has(line.name)
+        );
 
-          const firstShipsForLine = ships.filter(
-            (s) => s.lineId === firstLineId
-          );
-          if (firstShipsForLine.length > 0) {
-            setShipId(firstShipsForLine[0].id);
-          }
-        }
+        // Only keep ships that belong to those allowed lines
+        const allowedLineIds = new Set(allowedLines.map((l) => l.id));
+        const allowedShips = sortedShips.filter((ship) =>
+          allowedLineIds.has(ship.lineId)
+        );
+
+        setLines(allowedLines);
+        setShips(allowedShips);
       } catch (e) {
         console.error("Error loading cruise options from Apify:", e);
         if (!cancelled) {
@@ -72,18 +95,24 @@ const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
 
   // Only show ships for the selected line
   const filteredShips = useMemo(
-    () => ships.filter((s) => !lineId || s.lineId === lineId),
+    () => ships.filter((s) => lineId && s.lineId === lineId),
     [ships, lineId]
   );
 
-  // When the line changes, reset ship to first ship for that line
+  // When the line changes, auto-select the first ship for that line
   useEffect(() => {
-    if (!lineId) return;
-    const firstShipForLine = filteredShips[0];
-    if (firstShipForLine && !filteredShips.some((s) => s.id === shipId)) {
-      setShipId(firstShipForLine.id);
+    if (!lineId) {
+      setShipId("");
+      return;
     }
-  }, [lineId, filteredShips, shipId]);
+
+    const firstShipForLine = filteredShips[0];
+    if (firstShipForLine) {
+      setShipId(firstShipForLine.id);
+    } else {
+      setShipId("");
+    }
+  }, [lineId, filteredShips]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +151,7 @@ const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
             disabled={loadingOptions || lines.length === 0}
           >
+            <option value="">Please Select One</option>
             {lines.map((line) => (
               <option key={line.id} value={line.id}>
                 {line.name}
@@ -137,8 +167,9 @@ const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
             value={shipId}
             onChange={(e) => setShipId(e.target.value)}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            disabled={loadingOptions || filteredShips.length === 0}
+            disabled={loadingOptions || !lineId || filteredShips.length === 0}
           >
+            <option value="">Please Select One</option>
             {filteredShips.map((ship) => (
               <option key={ship.id} value={ship.id}>
                 {ship.name}

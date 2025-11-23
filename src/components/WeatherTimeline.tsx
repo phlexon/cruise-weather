@@ -1,7 +1,7 @@
 // src/components/WeatherTimeline.tsx
 import React from "react";
 
-type ItineraryDay = {
+type TimelineDay = {
   day: number;
   date?: string;
   location: string;
@@ -12,11 +12,23 @@ type ItineraryDay = {
   description?: string;
 };
 
-type Props = {
-  itinerary: ItineraryDay[];
+type WeatherTimelineProps = {
+  itinerary: TimelineDay[];
 };
 
-function getIconEmoji(icon?: ItineraryDay["icon"]) {
+// Avoid timezone shift by forcing a local-time date
+function formatDisplayDate(iso?: string): string {
+  if (!iso) return "";
+  // Treat as local noon on that calendar date
+  const d = new Date(iso + "T12:00:00");
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function getIconEmoji(icon?: TimelineDay["icon"]) {
   switch (icon) {
     case "sunny":
       return "☀️";
@@ -27,74 +39,161 @@ function getIconEmoji(icon?: ItineraryDay["icon"]) {
     case "rain":
       return "🌧️";
     default:
-      return "🌤️";
+      return "☀️";
   }
 }
 
-const WeatherTimeline: React.FC<Props> = ({ itinerary }) => {
+function getCardBackground(day: TimelineDay): string {
+  const hasWeather =
+    typeof day.high === "number" ||
+    typeof day.low === "number" ||
+    typeof day.rainChance === "number";
+
+  if (!hasWeather) {
+    // light gray when no weather data
+    return "#f3f4f6";
+  }
+
+  if (day.icon === "rain") {
+    // slightly cooler for rainy days
+    return "#e0f2fe";
+  }
+
+  // warm, sunny background for normal days
+  return "#fff7ed";
+}
+
+export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
   if (!itinerary || itinerary.length === 0) {
-    return (
-      <p className="text-xs text-slate-600">
-        No itinerary details available for this cruise.
-      </p>
-    );
+    return <p style={{ fontSize: "12px" }}>No itinerary available.</p>;
   }
 
   return (
-    <ol className="space-y-3">
-      {itinerary.map((day) => (
-        <li
-          key={day.day}
-          className="flex items-stretch gap-3 rounded-xl bg-white p-3 text-xs text-slate-700 shadow-sm md:text-sm"
-        >
-          {/* Day + bigger icon */}
-          <div className="flex flex-col items-center justify-center rounded-lg bg-[#1F7ECE] px-3 py-2 text-[11px] font-semibold text-white">
-            <span className="text-[10px] uppercase tracking-wide">
-              Day {day.day}
-            </span>
-            <span className="mt-1 text-3xl leading-none">
-              {getIconEmoji(day.icon)}
-            </span>
-          </div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        maxHeight: "420px",
+        overflowY: "auto",
+      }}
+    >
+      {/* Header row */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: "11px",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: "#6b7280",
+          marginBottom: "4px",
+        }}
+      >
+        <span>Daily itinerary &amp; forecast</span>
+        <span>
+          Weather based on forecast for{" "}
+          {itinerary[0]?.location.split(",")[0] ?? "departure port"} (local
+          time).
+        </span>
+      </div>
 
-          {/* Main info */}
-          <div className="flex-1">
-            <div className="flex flex-wrap items-baseline justify-between gap-1">
-              <div>
-                <p className="font-semibold text-slate-900">
-                  {day.location || "At sea"}
-                </p>
-                {day.date && (
-                  <p className="text-[11px] text-slate-500">{day.date}</p>
-                )}
-              </div>
+      {itinerary.map((day) => {
+        const bg = getCardBackground(day);
+        const dateLabel = formatDisplayDate(day.date);
 
-              {(day.high !== undefined || day.low !== undefined) && (
-                <div className="text-right text-[11px] leading-tight text-slate-600 md:text-xs">
-                  {day.high !== undefined && day.low !== undefined && (
-                    <p className="font-semibold">
-                      {Math.round(day.high)}° / {Math.round(day.low)}°
-                    </p>
-                  )}
-                  {day.rainChance !== undefined && (
-                    <p>
-                      {Math.round(day.rainChance)}% chance of rain
-                    </p>
-                  )}
-                </div>
-              )}
+        return (
+          <div
+            key={day.day}
+            style={{
+              borderRadius: "10px",
+              padding: "10px 12px",
+              background: bg,
+              border: "1px solid rgba(249,115,22,0.35)",
+            }}
+          >
+            {/* Day + date */}
+            <div
+              style={{
+                fontSize: "11px",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "#6b7280",
+                marginBottom: "4px",
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>Day {day.day}</span>
+              <span>{dateLabel}</span>
             </div>
 
-            {day.description && (
-              <p className="mt-1 text-[11px] text-slate-600">
-                {day.description}
-              </p>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-};
+            {/* Location */}
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                marginBottom: "2px",
+                color: "#111827",
+              }}
+            >
+              {day.location}
+            </div>
 
-export default WeatherTimeline;
+            {/* Weather row */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "8px",
+                marginTop: "4px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "22px",
+                  lineHeight: 1,
+                  marginTop: "-2px",
+                }}
+              >
+                {getIconEmoji(day.icon)}
+              </div>
+
+              <div style={{ fontSize: "12px", color: "#374151" }}>
+                {typeof day.high === "number" &&
+                  typeof day.low === "number" && (
+                    <div>
+                      <strong>
+                        High {Math.round(day.high)}° • Low{" "}
+                        {Math.round(day.low)}°
+                      </strong>
+                    </div>
+                  )}
+
+                {typeof day.rainChance === "number" && (
+                  <div>Chance of rain: {Math.round(day.rainChance)}%</div>
+                )}
+
+                {day.description && (
+                  <div style={{ marginTop: "2px", fontSize: "11px" }}>
+                    {day.description}
+                  </div>
+                )}
+
+                {!day.description &&
+                  !day.high &&
+                  !day.low &&
+                  !day.rainChance && (
+                    <div style={{ fontSize: "11px", fontStyle: "italic" }}>
+                      No forecast available for this day yet – check closer to
+                      your sail date.
+                    </div>
+                  )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

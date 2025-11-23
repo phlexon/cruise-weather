@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CruiseForm from "./components/CruiseForm";
 import CruiseResults from "./components/CruiseResults";
 import WeatherTimeline from "./components/WeatherTimeline";
@@ -15,7 +15,7 @@ import { sampleItinerary } from "./data/mockData";
 type CruiseSelection = {
   lineId: string;
   shipId: string;
-  sailDate: string;
+  sailDate: string; // "YYYY-MM-DD"
   lineName?: string;
   shipName?: string;
 };
@@ -30,61 +30,6 @@ type ItineraryDay = {
   icon?: "sunny" | "partly" | "cloudy" | "rain";
   description?: string;
 };
-
-// Normalize any date string to "YYYY-MM-DD" for Tomorrow.io lookups
-function normalizeDateForWeather(dateStr?: string | null): string | null {
-  if (!dateStr) return null;
-
-  // Already ISO
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr;
-  }
-
-  // Handle "2025 Nov 22"
-  const m = dateStr.match(/^(\d{4})\s+([A-Za-z]{3})\s+(\d{2})$/);
-  if (m) {
-    const [, yearStr, monStr, dayStr] = m;
-    const months: Record<string, number> = {
-      Jan: 0,
-      Feb: 1,
-      Mar: 2,
-      Apr: 3,
-      May: 4,
-      Jun: 5,
-      Jul: 6,
-      Aug: 7,
-      Sep: 8,
-      Oct: 9,
-      Nov: 10,
-      Dec: 11,
-    };
-    const idx = months[monStr];
-    if (idx != null) {
-      const d = new Date(Number(yearStr), idx, Number(dayStr));
-      if (!Number.isNaN(d.getTime())) {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        return `${yyyy}-${mm}-${dd}`;
-      }
-    }
-  }
-
-  // Last fallback: let Date try to parse it
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return null;
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-
-// --- helper: strip "(code 4000)" etc from descriptions ---
-function cleanDescription(text?: string): string {
-  if (!text) return "";
-  return text.replace(/\(code\s*\d+\)/gi, "").trim();
-}
 
 export default function App() {
   const [searchResults, setSearchResults] = useState<CruiseSummary[]>([]);
@@ -103,21 +48,28 @@ export default function App() {
     sampleItinerary as unknown as ItineraryDay[]
   );
 
-  // Cruises to show in the "Matching cruises" list.
-  const visibleResults = selectedCruise
-    ? searchResults.filter((c) => c.id !== selectedCruise.id)
-    : searchResults;
+  // Does the selected cruise have ANY weather data at all?
+  const [hasWeather, setHasWeather] = useState<boolean>(false);
 
-  // Map clicks on *visible* results back to the original searchResults array.
-  const handleVisibleResultClick = (visibleIndex: number) => {
-    const cruise = visibleResults[visibleIndex];
-    if (!cruise) return;
+  // NEW: keep track of the sail date the user selected in the form
+  const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
 
-    const originalIndex = searchResults.findIndex((c) => c.id === cruise.id);
-    if (originalIndex === -1) return;
+  // simple "isMobile" flag for header layout
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
 
-    handleResultClick(originalIndex);
-  };
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const selectedIndex =
+    selectedCruise && searchResults.length
+      ? searchResults.findIndex((c) => c.id === selectedCruise.id)
+      : null;
 
   // ---------- SEARCH ----------
   const handleCruiseSubmit = async ({
@@ -131,10 +83,15 @@ export default function App() {
     setSelectedCruise(null);
     setSearchResults([]);
     setHasSubmitted(false);
+    setHasWeather(false);
+
+    // store the sail date the user picked
+    setCurrentSailDate(sailDate);
 
     try {
       const results = await searchCruisesByDate(sailDate);
 
+      // Filter to match selected line + ship if names are provided
       const filtered = results.filter((c) => {
         if (lineName && c.cruiseLine !== lineName) return false;
         if (shipName && c.shipName !== shipName) return false;
@@ -152,49 +109,50 @@ export default function App() {
     }
   };
 
-// ---------- CARD CLICK ----------
-const handleResultClick = async (index: number) => {
-  const cruise = searchResults[index];
-  if (!cruise) return;
+  // ---------- CARD CLICK ----------
+  const handleResultClick = async (index: number) => {
+    const cruise = searchResults[index];
+    if (!cruise) return;
 
-  setSelectedCruise(cruise);
-  setLoadingDetails(true);
-  setDetailsError(null);
-
-  try {
-    // 1) load itinerary from Apify
-    const cruiseDays: CruiseDay[] = await getItineraryFromApify({
-      shipName: cruise.shipName,
-      sailDate: cruise.departIso,
-    });
-
-    let daysToUse = cruiseDays;
-
-    if (!daysToUse || daysToUse.length === 0) {
-      console.warn("No Apify itinerary found — using sampleItinerary");
-      daysToUse = (sampleItinerary as any[]).map(
-        (d: any, idx: number): CruiseDay => ({
-          dayNumber: idx + 1,
-          date: d.date,
-          portName:
-            d.location?.replace("(Embarkation)", "").trim() ?? d.location,
-          rawStopText: d.location,
-        })
-      );
-    }
-
-    // 2) base mapping used by the UI
-    let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
-      day: idx + 1,
-      date: day.date, // keep the Apify date string for display
-      location: day.portName,
-      icon: "sunny",
-      description: "Loading weather…",
-    }));
+    setSelectedCruise(cruise);
+    setLoadingDetails(true);
+    setDetailsError(null);
+    setHasWeather(false); // reset for this cruise
 
     try {
-      // 3) Build the true weather dates from sail date + day index
-      const sailIso = cruise.departIso; // "YYYY-MM-DD"
+      // 1) load itinerary from Apify
+      const cruiseDays: CruiseDay[] = await getItineraryFromApify({
+        shipName: cruise.shipName,
+        sailDate: cruise.departIso,
+      });
+
+      let daysToUse = cruiseDays;
+
+      if (!daysToUse || daysToUse.length === 0) {
+        console.warn("No Apify itinerary found — using sampleItinerary");
+        daysToUse = (sampleItinerary as any[]).map(
+          (d: any, idx: number): CruiseDay => ({
+            dayNumber: idx + 1,
+            date: d.date,
+            portName:
+              d.location?.replace("(Embarkation)", "").trim() ?? d.location,
+            rawStopText: d.location,
+          })
+        );
+      }
+
+      // 2) basic mapping used by the UI (location + day index)
+      let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
+        day: idx + 1,
+        date: day.date, // will be overwritten with aligned date below
+        location: day.portName,
+        icon: "sunny",
+        description: "Loading weather…",
+      }));
+
+      // --- ALIGN DATES TO THE USER-SELECTED SAIL DATE ---
+      // If we have the user's sail date, treat that as canonical; otherwise fall back to Apify's.
+      const sailIso = currentSailDate ?? cruise.departIso; // "YYYY-MM-DD"
       const sailDateObj = new Date(sailIso + "T00:00:00Z");
 
       const isoDates = mapped.map((_, idx) => {
@@ -203,73 +161,89 @@ const handleResultClick = async (index: number) => {
         return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
       });
 
-      const embarkationLocation = mapped[0]?.location ?? "Miami";
-      const embarkationCity = embarkationLocation.split(",")[0];
+      // 3) enrich with Tomorrow.io
+      try {
+        const embarkationLocation = mapped[0]?.location ?? "Miami";
+        const embarkationCity = embarkationLocation.split(",")[0];
 
-      const forecastsByDate = await getDailyForecastsForCity(
-        embarkationCity,
-        isoDates
-      );
+        const forecastsByDate = await getDailyForecastsForCity(
+          embarkationCity,
+          isoDates
+        );
 
-      // 4) Apply forecasts back onto each itinerary day using the isoDates array
-      mapped = mapped.map((day, idx) => {
-        const dateKey = isoDates[idx];
-        const forecast = forecastsByDate[dateKey];
+        let anyWeather = false;
 
-        if (!forecast) {
-          return {
+        mapped = mapped.map((day, idx) => {
+          const dateKey = isoDates[idx];
+          const forecast = forecastsByDate[dateKey];
+
+          // always use aligned date for display
+          const baseDay: ItineraryDay = {
             ...day,
-            description: "Weather not available for this day yet.",
+            date: isoDates[idx],
           };
-        }
 
-        return {
+          if (!forecast) {
+            return {
+              ...baseDay,
+              description: "Weather not available for this day yet.",
+            };
+          }
+
+          anyWeather = true;
+
+          return {
+            ...baseDay,
+            high: forecast.high,
+            low: forecast.low,
+            rainChance: forecast.rainChance,
+            icon: forecast.icon,
+            description: forecast.description,
+          };
+        });
+
+        setHasWeather(anyWeather);
+      } catch (weatherErr: any) {
+        console.error("Weather provider failed, itinerary only:", weatherErr);
+
+        const msg =
+          (weatherErr &&
+            (weatherErr.message ||
+              weatherErr.toString?.() ||
+              JSON.stringify(weatherErr))) ||
+          "Unknown error (null error object)";
+
+        setDetailsError(
+          "Weather data is temporarily unavailable. " + String(msg)
+        );
+
+        setHasWeather(false);
+
+        // even if weather fails, still align dates to sail date
+        mapped = mapped.map((day, idx) => ({
           ...day,
-          high: forecast.high,
-          low: forecast.low,
-          rainChance: forecast.rainChance,
-          icon: forecast.icon,
-          description: forecast.description,
-        };
-      });
-    } catch (weatherErr: any) {
-      console.error("Weather provider failed, itinerary only:", weatherErr);
+          date: isoDates[idx],
+          description:
+            day.description === "Loading weather…"
+              ? "Weather not available right now."
+              : day.description,
+        }));
+      }
 
-      const msg =
-        (weatherErr &&
-          (weatherErr.message ||
-            weatherErr.toString?.() ||
-            JSON.stringify(weatherErr))) ||
-        "Unknown error (null error object)";
-
-      setDetailsError(
-        "Weather data is temporarily unavailable. " + String(msg)
-      );
-
-      mapped = mapped.map((day) => ({
-        ...day,
-        description:
-          day.description === "Loading weather…"
-            ? "Weather not available right now."
-            : day.description,
-      }));
+      setItinerary(mapped);
+    } catch (e) {
+      console.error("Error loading cruise itinerary:", e);
+      setDetailsError("There was a problem loading the cruise itinerary.");
+      setItinerary(sampleItinerary as unknown as ItineraryDay[]);
+      setHasWeather(false);
+    } finally {
+      setLoadingDetails(false);
     }
-
-    setItinerary(mapped);
-  } catch (e) {
-    console.error("Error loading cruise itinerary:", e);
-    setDetailsError("There was a problem loading the cruise itinerary.");
-    setItinerary(sampleItinerary as unknown as ItineraryDay[]);
-  } finally {
-    setLoadingDetails(false);
-  }
-};
-
+  };
 
   // ---------- UI ----------
   return (
     <div
-      className="app-shell"
       style={{
         minHeight: "100vh",
         margin: 0,
@@ -282,32 +256,33 @@ const handleResultClick = async (index: number) => {
     >
       {/* HEADER */}
       <header
-        className="cc-header"
         style={{
           maxWidth: "1040px",
           margin: "0 auto 2rem auto",
           display: "flex",
-          flexWrap: "wrap",
           alignItems: "center",
-          gap: "1rem",
+          justifyContent: isMobile ? "center" : "space-between",
+          gap: "1.5rem",
+          flexDirection: isMobile ? "column" : "row",
         }}
       >
         <img
           src="/cruisecast-logo.webp"
           alt="CruiseCast"
-          className="cc-logo"
-          style={{ height: "48px", objectFit: "contain" }}
+          style={{
+            height: isMobile ? "46px" : "54px",
+            objectFit: "contain",
+          }}
         />
 
         <div
-          className="cc-tagline"
           style={{
+            textAlign: isMobile ? "center" : "right",
             color: "white",
-            fontSize: "10px",
+            fontSize: "11px",
             fontWeight: 600,
-            letterSpacing: "0.18em",
+            letterSpacing: "0.2em",
             textTransform: "uppercase",
-            flex: "1 1 160px",
           }}
         >
           Plan Ahead • Sail Smart
@@ -338,22 +313,22 @@ const handleResultClick = async (index: number) => {
         <div style={{ width: "100%", maxWidth: "1040px" }}>
           {/* MAIN CARD */}
           <section
-            className="main-card"
             style={{
               width: "100%",
               background: "rgba(255,255,255,0.96)",
               borderRadius: "18px",
-              padding: "20px 16px 22px",
+              padding: "24px 24px 28px",
               boxShadow: "0 24px 60px rgba(0,0,0,0.22)",
               border: "1px solid rgba(255,255,255,0.7)",
             }}
           >
             <h1
               style={{
-                fontSize: "20px",
+                fontSize: "24px",
                 lineHeight: 1.2,
-                margin: "0 0 14px 0",
+                margin: "0 0 18px 0",
                 color: "#324A6D",
+                textAlign: isMobile ? "center" : "left",
               }}
             >
               Check Your Cruise Weather
@@ -388,33 +363,50 @@ const handleResultClick = async (index: number) => {
               </p>
             )}
 
-            <div style={{ marginTop: "18px", color: "#324A6D" }}>
+            <div style={{ marginTop: "22px", color: "#324A6D" }}>
               {selectedCruise ? (
                 <div>
                   <h2
                     style={{
-                      fontSize: "16px",
-                      margin: "0 0 4px 0",
+                      fontSize: "18px",
+                      margin: "0 0 6px 0",
                       fontWeight: 600,
                     }}
                   >
-                    Selected cruise & daily weather
+                    Selected cruise &amp; daily weather
                   </h2>
                   <p
                     style={{
                       fontSize: "12px",
-                      margin: "0 0 8px 0",
+                      margin: "0 0 4px 0",
                       opacity: 0.85,
                     }}
                   >
                     {selectedCruise.title}
-                    {selectedCruise.shipName
+                    {hasWeather && selectedCruise.shipName
                       ? ` · Ship: ${selectedCruise.shipName}`
                       : ""}
-                    {selectedCruise.cruiseLine
+                    {hasWeather && selectedCruise.cruiseLine
                       ? ` · Line: ${selectedCruise.cruiseLine}`
                       : ""}
                   </p>
+
+                  {!loadingDetails &&
+                    selectedCruise &&
+                    !hasWeather &&
+                    !detailsError && (
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          margin: "0 0 6px 0",
+                          opacity: 0.8,
+                          fontStyle: "italic",
+                        }}
+                      >
+                        Weather data isn&apos;t available yet for this sailing —
+                        showing itinerary only.
+                      </p>
+                    )}
 
                   {loadingDetails && (
                     <p
@@ -424,7 +416,7 @@ const handleResultClick = async (index: number) => {
                         color: "#324A6D",
                       }}
                     >
-                      Loading itinerary & weather...
+                      Loading itinerary &amp; weather...
                     </p>
                   )}
 
@@ -448,8 +440,6 @@ const handleResultClick = async (index: number) => {
                         borderRadius: "12px",
                         background: "rgba(248,250,252,0.9)",
                         padding: "10px",
-                        maxHeight: "380px",
-                        overflowY: "auto",
                       }}
                     >
                       <WeatherTimeline itinerary={itinerary} />
@@ -460,8 +450,8 @@ const handleResultClick = async (index: number) => {
                 <>
                   <h2
                     style={{
-                      fontSize: "16px",
-                      margin: "0 0 4px 0",
+                      fontSize: "18px",
+                      margin: "0 0 6px 0",
                       fontWeight: 600,
                     }}
                   >
@@ -494,34 +484,33 @@ const handleResultClick = async (index: number) => {
           </section>
 
           {/* RESULTS CARD */}
-          {hasSubmitted && visibleResults.length > 0 && (
+          {hasSubmitted && searchResults.length > 0 && (
             <section
-              className="results-card"
               style={{
-                marginTop: "14px",
+                marginTop: "18px",
                 background: "rgba(255,255,255,0.96)",
                 borderRadius: "16px",
-                padding: "14px 16px",
+                padding: "16px 20px",
                 boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
                 border: "1px solid rgba(255,255,255,0.7)",
               }}
             >
               <h2
                 style={{
-                  fontSize: "13px",
+                  fontSize: "14px",
                   fontWeight: 600,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                   color: "#324A6D",
-                  margin: "0 0 8px 0",
+                  margin: "0 0 10px 0",
                 }}
               >
                 Matching cruises
               </h2>
               <CruiseResults
-                results={visibleResults}
-                onSelect={handleVisibleResultClick}
-                selectedIndex={null}
+                results={searchResults}
+                onSelect={handleResultClick}
+                selectedIndex={selectedIndex}
               />
             </section>
           )}
@@ -532,14 +521,14 @@ const handleResultClick = async (index: number) => {
             !error && (
               <section
                 style={{
-                  marginTop: "14px",
+                  marginTop: "18px",
                   background: "rgba(255,255,255,0.96)",
                   borderRadius: "16px",
-                  padding: "12px 16px",
+                  padding: "14px 18px",
                   boxShadow: "0 20px 50px rgba(0,0,0,0.14)",
                   border: "1px solid rgba(255,255,255,0.7)",
                   fontSize: "13px",
-                  color: "#374151",
+                  color: "##374151",
                 }}
               >
                 No cruises found for that ship and date. Try adjusting your
@@ -552,7 +541,7 @@ const handleResultClick = async (index: number) => {
       {/* FOOTER */}
       <footer
         style={{
-          marginTop: "1rem",
+          marginTop: "1.25rem",
           textAlign: "center",
           fontSize: "11px",
           color: "rgba(255,255,255,0.9)",
