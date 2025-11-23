@@ -152,122 +152,119 @@ export default function App() {
     }
   };
 
-  // ---------- CARD CLICK ----------
-  const handleResultClick = async (index: number) => {
-    const cruise = searchResults[index];
-    if (!cruise) return;
+// ---------- CARD CLICK ----------
+const handleResultClick = async (index: number) => {
+  const cruise = searchResults[index];
+  if (!cruise) return;
 
-    setSelectedCruise(cruise);
-    setLoadingDetails(true);
-    setDetailsError(null);
+  setSelectedCruise(cruise);
+  setLoadingDetails(true);
+  setDetailsError(null);
+
+  try {
+    // 1) load itinerary from Apify
+    const cruiseDays: CruiseDay[] = await getItineraryFromApify({
+      shipName: cruise.shipName,
+      sailDate: cruise.departIso,
+    });
+
+    let daysToUse = cruiseDays;
+
+    if (!daysToUse || daysToUse.length === 0) {
+      console.warn("No Apify itinerary found — using sampleItinerary");
+      daysToUse = (sampleItinerary as any[]).map(
+        (d: any, idx: number): CruiseDay => ({
+          dayNumber: idx + 1,
+          date: d.date,
+          portName:
+            d.location?.replace("(Embarkation)", "").trim() ?? d.location,
+          rawStopText: d.location,
+        })
+      );
+    }
+
+    // 2) base mapping used by the UI
+    let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
+      day: idx + 1,
+      date: day.date, // keep the Apify date string for display
+      location: day.portName,
+      icon: "sunny",
+      description: "Loading weather…",
+    }));
 
     try {
-      const cruiseDays: CruiseDay[] = await getItineraryFromApify({
-        shipName: cruise.shipName,
-        sailDate: cruise.departIso,
+      // 3) Build the true weather dates from sail date + day index
+      const sailIso = cruise.departIso; // "YYYY-MM-DD"
+      const sailDateObj = new Date(sailIso + "T00:00:00Z");
+
+      const isoDates = mapped.map((_, idx) => {
+        const d = new Date(sailDateObj);
+        d.setDate(d.getDate() + idx); // Day 1 = sail date, Day 2 = +1, etc.
+        return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
       });
 
-      let daysToUse = cruiseDays;
+      const embarkationLocation = mapped[0]?.location ?? "Miami";
+      const embarkationCity = embarkationLocation.split(",")[0];
 
-      if (!daysToUse || daysToUse.length === 0) {
-        console.warn("No Apify itinerary found — using sampleItinerary");
-        daysToUse = (sampleItinerary as any[]).map(
-          (d: any, idx: number): CruiseDay => ({
-            dayNumber: idx + 1,
-            date: d.date,
-            portName:
-              d.location?.replace("(Embarkation)", "").trim() ?? d.location,
-            rawStopText: d.location,
-          })
-        );
-      }
+      const forecastsByDate = await getDailyForecastsForCity(
+        embarkationCity,
+        isoDates
+      );
 
-      let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
-        day: idx + 1,
-        date: day.date,
-        location: day.portName,
-        icon: "sunny",
-        description: "Loading weather…",
-      }));
+      // 4) Apply forecasts back onto each itinerary day using the isoDates array
+      mapped = mapped.map((day, idx) => {
+        const dateKey = isoDates[idx];
+        const forecast = forecastsByDate[dateKey];
 
-      try {
-        // Normalize all dates to ISO for the API call
-        const isoDates = mapped
-          .map((d) => normalizeDateForWeather(d.date))
-          .filter((d): d is string => Boolean(d));
-
-        if (!isoDates.length) {
-          throw new Error("No valid dates for weather request.");
-        }
-
-        const embarkationLocation = mapped[0]?.location ?? "Miami";
-        const embarkationCity = embarkationLocation.split(",")[0];
-
-        const forecastsByDate = await getDailyForecastsForCity(
-          embarkationCity,
-          isoDates
-        );
-
-        mapped = mapped.map((day) => {
-          const normalized = normalizeDateForWeather(day.date);
-          if (!normalized) {
-            return {
-              ...day,
-              description: "Weather not available for this day yet.",
-            };
-          }
-
-          const forecast = forecastsByDate[normalized];
-          if (!forecast) {
-            return {
-              ...day,
-              description: "Weather not available for this day yet.",
-            };
-          }
-
+        if (!forecast) {
           return {
             ...day,
-            high: forecast.high,
-            low: forecast.low,
-            rainChance: forecast.rainChance,
-            icon: forecast.icon,
-            description: forecast.description,
+            description: "Weather not available for this day yet.",
           };
-        });
+        }
 
-      } catch (weatherErr: any) {
-        console.error("Weather provider failed, itinerary only:", weatherErr);
-
-        const msg =
-          (weatherErr &&
-            (weatherErr.message ||
-              weatherErr.toString?.() ||
-              JSON.stringify(weatherErr))) ||
-          "Unknown error (null error object)";
-
-        setDetailsError(
-          "Weather data is temporarily unavailable. " + String(msg)
-        );
-
-        mapped = mapped.map((day) => ({
+        return {
           ...day,
-          description:
-            day.description === "Loading weather…"
-              ? "Weather not available right now."
-              : day.description,
-        }));
-      }
+          high: forecast.high,
+          low: forecast.low,
+          rainChance: forecast.rainChance,
+          icon: forecast.icon,
+          description: forecast.description,
+        };
+      });
+    } catch (weatherErr: any) {
+      console.error("Weather provider failed, itinerary only:", weatherErr);
 
+      const msg =
+        (weatherErr &&
+          (weatherErr.message ||
+            weatherErr.toString?.() ||
+            JSON.stringify(weatherErr))) ||
+        "Unknown error (null error object)";
 
-      setItinerary(mapped);
-    } catch (e) {
-      console.error("Error loading cruise itinerary:", e);
-      setDetailsError("There was a problem loading the cruise itinerary.");
-      setItinerary(sampleItinerary as unknown as ItineraryDay[]);
-    } finally {
-      setLoadingDetails(false);
+      setDetailsError(
+        "Weather data is temporarily unavailable. " + String(msg)
+      );
+
+      mapped = mapped.map((day) => ({
+        ...day,
+        description:
+          day.description === "Loading weather…"
+            ? "Weather not available right now."
+            : day.description,
+      }));
     }
-  };
+
+    setItinerary(mapped);
+  } catch (e) {
+    console.error("Error loading cruise itinerary:", e);
+    setDetailsError("There was a problem loading the cruise itinerary.");
+    setItinerary(sampleItinerary as unknown as ItineraryDay[]);
+  } finally {
+    setLoadingDetails(false);
+  }
+};
+
 
   // ---------- UI ----------
   return (
