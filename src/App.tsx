@@ -31,6 +31,55 @@ type ItineraryDay = {
   description?: string;
 };
 
+// Normalize any date string to "YYYY-MM-DD" for Tomorrow.io lookups
+function normalizeDateForWeather(dateStr?: string | null): string | null {
+  if (!dateStr) return null;
+
+  // Already ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+
+  // Handle "2025 Nov 22"
+  const m = dateStr.match(/^(\d{4})\s+([A-Za-z]{3})\s+(\d{2})$/);
+  if (m) {
+    const [, yearStr, monStr, dayStr] = m;
+    const months: Record<string, number> = {
+      Jan: 0,
+      Feb: 1,
+      Mar: 2,
+      Apr: 3,
+      May: 4,
+      Jun: 5,
+      Jul: 6,
+      Aug: 7,
+      Sep: 8,
+      Oct: 9,
+      Nov: 10,
+      Dec: 11,
+    };
+    const idx = months[monStr];
+    if (idx != null) {
+      const d = new Date(Number(yearStr), idx, Number(dayStr));
+      if (!Number.isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    }
+  }
+
+  // Last fallback: let Date try to parse it
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+
 // --- helper: strip "(code 4000)" etc from descriptions ---
 function cleanDescription(text?: string): string {
   if (!text) return "";
@@ -142,36 +191,50 @@ export default function App() {
       }));
 
       try {
-        const dates = mapped
-          .map((d) => d.date)
-          .filter(Boolean) as string[];
+        // Normalize all dates to ISO for the API call
+        const isoDates = mapped
+          .map((d) => normalizeDateForWeather(d.date))
+          .filter((d): d is string => Boolean(d));
+
+        if (!isoDates.length) {
+          throw new Error("No valid dates for weather request.");
+        }
 
         const embarkationLocation = mapped[0]?.location ?? "Miami";
         const embarkationCity = embarkationLocation.split(",")[0];
 
         const forecastsByDate = await getDailyForecastsForCity(
           embarkationCity,
-          dates
+          isoDates
         );
 
         mapped = mapped.map((day) => {
-          if (!day.date) return day;
-          const forecast = forecastsByDate[day.date];
+          const normalized = normalizeDateForWeather(day.date);
+          if (!normalized) {
+            return {
+              ...day,
+              description: "Weather not available for this day yet.",
+            };
+          }
+
+          const forecast = forecastsByDate[normalized];
           if (!forecast) {
             return {
               ...day,
               description: "Weather not available for this day yet.",
             };
           }
+
           return {
             ...day,
             high: forecast.high,
             low: forecast.low,
             rainChance: forecast.rainChance,
             icon: forecast.icon,
-            description: cleanDescription(forecast.description),
+            description: forecast.description,
           };
         });
+
       } catch (weatherErr: any) {
         console.error("Weather provider failed, itinerary only:", weatherErr);
 
