@@ -172,13 +172,19 @@ export default function App() {
             description: cleanDescription(forecast.description),
           };
         });
-} catch (weatherErr: any) {
-  console.error("Weather provider failed, itinerary only:", weatherErr);
-  setDetailsError(
-    "Weather data is temporarily unavailable. " +
-      (weatherErr?.message || String(weatherErr || "Unknown error"))
-  );
+      } catch (weatherErr: any) {
+        console.error("Weather provider failed, itinerary only:", weatherErr);
 
+        const msg =
+          (weatherErr &&
+            (weatherErr.message ||
+              weatherErr.toString?.() ||
+              JSON.stringify(weatherErr))) ||
+          "Unknown error (null error object)";
+
+        setDetailsError(
+          "Weather data is temporarily unavailable. " + String(msg)
+        );
 
         mapped = mapped.map((day) => ({
           ...day,
@@ -188,6 +194,7 @@ export default function App() {
               : day.description,
         }));
       }
+
 
       setItinerary(mapped);
     } catch (e) {
