@@ -21,11 +21,12 @@ export type ForecastOptions = {
 // In-memory cache: key = city|dates|station => { [date]: DailyForecast }
 const forecastCache: Record<string, Record<string, DailyForecast>> = {};
 
-// Separate cache for NCEI monthly normals, keyed by station ID
+// NCEI normals row shape – supports either MONTH or DATE field
 type NceiMonthlyNormalRow = {
   STATION: string;
   NAME: string;
-  MONTH: string; // "1".."12" or "01".."12"
+  DATE?: string;   // e.g. "2010-11-01"
+  MONTH?: string;  // some configs may expose this
   "MLY-TMAX-NORMAL"?: string;
   "MLY-TMIN-NORMAL"?: string;
   "MLY-TAVG-NORMAL"?: string;
@@ -34,9 +35,8 @@ type NceiMonthlyNormalRow = {
 
 const nceiNormalsCache: Record<string, NceiMonthlyNormalRow[]> = {};
 
-// Base URL for the proxy (same origin by default)
-const NCEI_PROXY_BASE =
-  import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
+// Base URL for proxy (same origin by default)
+const NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
 
 // --- Helpers -------------------------------------------------------
 
@@ -50,15 +50,15 @@ function makeCacheKey(
 }
 
 function mapTomorrowCodeToIcon(code: number): WeatherIcon {
-  if (code >= 1000 && code < 1100) return "sunny";   // clear
-  if (code >= 1100 && code < 1300) return "partly";  // partly cloudy
-  if (code >= 2000 && code < 3000) return "cloudy";  // cloudy / fog
-  return "rain";                                     // rain / snow / storms
+  if (code >= 1000 && code < 1100) return "sunny";
+  if (code >= 1100 && code < 1300) return "partly";
+  if (code >= 2000 && code < 3000) return "cloudy";
+  return "rain";
 }
 
 /**
- * Fetch NCEI monthly climate normals (1991–2020) for a given station.
- * Calls your backend proxy at /api/ncei-normals to avoid browser CORS.
+ * Fetch NCEI monthly climate normals (1991–2020) for a given station
+ * via your backend proxy at /api/ncei-normals (to avoid browser CORS).
  */
 async function getNceiMonthlyNormalsForStation(
   stationId: string
@@ -75,20 +75,32 @@ async function getNceiMonthlyNormalsForStation(
   const text = await res.text();
 
   try {
-    const json = JSON.parse(text) as
-      | NceiMonthlyNormalRow[]
-      | NceiMonthlyNormalRow;
-
+    const json = JSON.parse(text) as NceiMonthlyNormalRow[] | NceiMonthlyNormalRow;
     const rows = Array.isArray(json) ? json : [json];
     nceiNormalsCache[stationId] = rows;
     return rows;
   } catch {
-    console.error(
-      "NCEI normals proxy returned non-JSON:",
-      text.slice(0, 200)
-    );
+    console.error("NCEI normals proxy returned non-JSON:", text.slice(0, 200));
     throw new Error("NCEI normals proxy did not return JSON");
   }
+}
+
+/**
+ * Extract a 1–12 month number from a normals row.
+ * Supports either MONTH column or DATE column.
+ */
+function getMonthFromNormalRow(row: NceiMonthlyNormalRow): number | null {
+  if (row.MONTH) {
+    const m = parseInt(row.MONTH, 10);
+    if (!Number.isNaN(m) && m >= 1 && m <= 12) return m;
+  }
+  if (row.DATE) {
+    const d = new Date(row.DATE);
+    if (!Number.isNaN(d.getTime())) {
+      return d.getUTCMonth() + 1; // 1..12
+    }
+  }
+  return null;
 }
 
 /**
@@ -115,8 +127,9 @@ async function fillMissingWithClimatology(
 
   const normalsByMonth = new Map<number, NceiMonthlyNormalRow>();
   for (const row of normals) {
-    const m = parseInt(row.MONTH, 10);
-    if (!Number.isNaN(m)) {
+    const m = getMonthFromNormalRow(row);
+    if (m != null) {
+      // last one wins if duplicates, which is fine here
       normalsByMonth.set(m, row);
     }
   }
@@ -148,9 +161,7 @@ async function fillMissingWithClimatology(
         ? parseFloat(tAvg)
         : existing[iso]?.low ?? NaN;
 
-    if (Number.isNaN(high) || Number.isNaN(low)) {
-      continue;
-    }
+    if (Number.isNaN(high) || Number.isNaN(low)) continue;
 
     const precipInches = prcp != null ? parseFloat(prcp) : 0;
     const rainChance = Math.max(
@@ -266,9 +277,8 @@ export async function getDailyForecastsForCity(
     }
   }
 
-  // --- Missing dates + debug log (single declaration) ---
+  // Missing dates + debug
   const missingDates = dates.filter((d) => !byDate[d]);
-
   console.log("Weather debug:", {
     city,
     stationId: options?.nceiStationId ?? null,
