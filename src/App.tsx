@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useEffect, useState } from "react";
-import CruiseForm from "./components/CruiseForm";
+import CruiseForm, { type CruiseSelection } from "./components/CruiseForm";
 import CruiseResults from "./components/CruiseResults";
 import WeatherTimeline from "./components/WeatherTimeline";
 import {
@@ -10,17 +10,8 @@ import {
   type CruiseDay,
 } from "./services/cruiseApi";
 import { getDailyForecastsForCity } from "./services/weather";
+import { getNceiStationForCity } from "./data/nceiStations";
 import { sampleItinerary } from "./data/mockData";
-import { getNceiStationIdForCity } from "./data/portClimateMeta";
-
-
-type CruiseSelection = {
-  lineId: string;
-  shipId: string;
-  sailDate: string; // "YYYY-MM-DD"
-  lineName?: string;
-  shipName?: string;
-};
 
 type ItineraryDay = {
   day: number;
@@ -31,7 +22,6 @@ type ItineraryDay = {
   rainChance?: number;
   icon?: "sunny" | "partly" | "cloudy" | "rain";
   description?: string;
-  // new: whether the underlying data is a real forecast or climatology
   source?: "forecast" | "climatology";
 };
 
@@ -52,13 +42,9 @@ export default function App() {
     sampleItinerary as unknown as ItineraryDay[]
   );
 
-  // Does the selected cruise have ANY weather data at all?
   const [hasWeather, setHasWeather] = useState<boolean>(false);
-
-  // NEW: keep track of the sail date the user selected in the form
   const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
 
-  // simple "isMobile" flag for header layout
   const [isMobile, setIsMobile] = useState<boolean>(
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
@@ -75,53 +61,13 @@ export default function App() {
       ? searchResults.findIndex((c) => c.id === selectedCruise.id)
       : null;
 
-  // ---------- SEARCH ----------
-  const handleCruiseSubmit = async ({
-    lineName,
-    shipName,
-    sailDate,
-  }: CruiseSelection) => {
-    setLoadingSearch(true);
-    setError(null);
-    setDetailsError(null);
-    setSelectedCruise(null);
-    setSearchResults([]);
-    setHasSubmitted(false);
-    setHasWeather(false);
+  // ---------- Helper: load details for a cruise ----------
 
-    // store the sail date the user picked
-    setCurrentSailDate(sailDate);
-
-    try {
-      const results = await searchCruisesByDate(sailDate);
-
-      // Filter to match selected line + ship if names are provided
-      const filtered = results.filter((c) => {
-        if (lineName && c.cruiseLine !== lineName) return false;
-        if (shipName && c.shipName !== shipName) return false;
-        return true;
-      });
-
-      setSearchResults(filtered);
-      setHasSubmitted(true);
-    } catch (e) {
-      console.error("Error searching cruises:", e);
-      setError("There was a problem loading cruise results.");
-      setHasSubmitted(true);
-    } finally {
-      setLoadingSearch(false);
-    }
-  };
-
-  // ---------- CARD CLICK ----------
-  const handleResultClick = async (index: number) => {
-    const cruise = searchResults[index];
-    if (!cruise) return;
-
+  const loadCruiseDetails = async (cruise: CruiseSummary) => {
     setSelectedCruise(cruise);
     setLoadingDetails(true);
     setDetailsError(null);
-    setHasWeather(false); // reset for this cruise
+    setHasWeather(false);
 
     try {
       // 1) load itinerary from Apify
@@ -145,79 +91,67 @@ export default function App() {
         );
       }
 
-      // 2) basic mapping used by the UI (location + day index)
-      let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
-        day: idx + 1,
-        date: day.date, // will be overwritten with aligned date below
+      // basic mapping
+      let mapped: ItineraryDay[] = daysToUse.map((day) => ({
+        day: day.dayNumber,
+        date: day.date,
         location: day.portName,
         icon: "sunny",
         description: "Loading weather…",
       }));
 
-      // --- ALIGN DATES TO THE USER-SELECTED SAIL DATE ---
-      // If we have the user's sail date, treat that as canonical; otherwise fall back to Apify's.
-      const sailIso = currentSailDate ?? cruise.departIso; // "YYYY-MM-DD"
+      // align dates to the selected sail date
+      const sailIso = currentSailDate ?? cruise.departIso;
       const sailDateObj = new Date(sailIso + "T00:00:00Z");
 
       const isoDates = mapped.map((_, idx) => {
         const d = new Date(sailDateObj);
-        d.setDate(d.getDate() + idx); // Day 1 = sail date, Day 2 = +1, etc.
-        return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+        d.setDate(d.getDate() + idx); // Day 1 = sail date
+        return d.toISOString().slice(0, 10);
       });
 
-      // 3) enrich with Tomorrow.io
+      // 3) enrich with Tomorrow.io + NCEI climatology
       try {
-const embarkationLocation = mapped[0]?.location ?? "Miami";
-// e.g. "Fort Lauderdale, Florida (Embarkation)" -> "Fort Lauderdale"
-const embarkationCity = embarkationLocation.split(",")[0];
+        const embarkationLocation = mapped[0]?.location ?? "Miami";
+        const embarkationCity = embarkationLocation.split(",")[0];
+        const stationId = getNceiStationForCity(embarkationCity);
 
-// Look up NCEI station ID for this city (if we know it)
-const nceiStationId = getNceiStationIdForCity(embarkationCity);
+        const forecastsByDate = await getDailyForecastsForCity(
+          embarkationCity,
+          isoDates,
+          stationId ? { nceiStationId: stationId } : undefined
+        );
 
-const forecastsByDate = await getDailyForecastsForCity(
-  embarkationCity,
-  isoDates,
-  nceiStationId ? { nceiStationId } : undefined
-);
+        let anyWeather = false;
 
-let anyWeather = false;
+        mapped = mapped.map((day, idx) => {
+          const dateKey = isoDates[idx];
+          const forecast = forecastsByDate[dateKey];
 
-mapped = mapped.map((day, idx) => {
-  const dateKey = isoDates[idx];
-  const forecast = forecastsByDate[dateKey];
+          const baseDay: ItineraryDay = {
+            ...day,
+            date: dateKey,
+          };
 
-  // always use aligned date for display
-  const baseDay: ItineraryDay = {
-    ...day,
-    date: isoDates[idx],
-  };
+          if (!forecast) {
+            return {
+              ...baseDay,
+              description: "Weather not available for this day yet.",
+            };
+          }
 
-  if (!forecast) {
-    return {
-      ...baseDay,
-      description: "Weather not available for this day yet.",
-    };
-  }
+          anyWeather = true;
 
-  anyWeather = true;
-
-  // If this day came from climatology, add a little disclaimer
-  const description =
-    forecast.source === "climatology"
-      ? `${forecast.description} (based on historical averages, not a live forecast).`
-      : forecast.description;
-
-  return {
-    ...baseDay,
-    high: forecast.high,
-    low: forecast.low,
-    rainChance: forecast.rainChance,
-    icon: forecast.icon,
-    description,
-    source: forecast.source,
-  };
-});
-
+          return {
+            ...baseDay,
+            high: forecast.high,
+            low: forecast.low,
+            rainChance: forecast.rainChance,
+            icon: forecast.icon,
+            description: forecast.description,
+            source: forecast.source,
+          };
+        });
 
         setHasWeather(anyWeather);
       } catch (weatherErr: any) {
@@ -233,10 +167,8 @@ mapped = mapped.map((day, idx) => {
         setDetailsError(
           "Weather data is temporarily unavailable. " + String(msg)
         );
-
         setHasWeather(false);
 
-        // even if weather fails, still align dates to sail date
         mapped = mapped.map((day, idx) => ({
           ...day,
           date: isoDates[idx],
@@ -258,7 +190,58 @@ mapped = mapped.map((day, idx) => {
     }
   };
 
+  // ---------- SEARCH (called from form & calendar) ----------
+
+  const handleCruiseSubmit = async ({
+    lineName,
+    shipName,
+    sailDate,
+  }: CruiseSelection) => {
+    setLoadingSearch(true);
+    setError(null);
+    setDetailsError(null);
+    setSelectedCruise(null);
+    setSearchResults([]);
+    setHasSubmitted(false);
+    setHasWeather(false);
+
+    setCurrentSailDate(sailDate);
+
+    try {
+      const results = await searchCruisesByDate(sailDate);
+
+      const filtered = results.filter((c) => {
+        if (lineName && c.cruiseLine !== lineName) return false;
+        if (shipName && c.shipName !== shipName) return false;
+        return true;
+      });
+
+      setSearchResults(filtered);
+      setHasSubmitted(true);
+
+      // NEW: auto-load first cruise so a calendar click is "one click to open"
+      if (filtered.length > 0) {
+        await loadCruiseDetails(filtered[0]);
+      }
+    } catch (e) {
+      console.error("Error searching cruises:", e);
+      setError("There was a problem loading cruise results.");
+      setHasSubmitted(true);
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
+
+  // ---------- CARD CLICK ----------
+
+  const handleResultClick = async (index: number) => {
+    const cruise = searchResults[index];
+    if (!cruise) return;
+    await loadCruiseDetails(cruise);
+  };
+
   // ---------- UI ----------
+
   return (
     <div
       style={{
@@ -492,8 +475,8 @@ mapped = mapped.map((day, idx) => {
                       opacity: 0.75,
                     }}
                   >
-                    Tip: Start by picking your cruise line, then ship, then sail
-                    date.
+                    Tip: Pick your line and ship, then click a highlighted date
+                    in the calendar to open that sailing.
                   </p>
                 </>
               )}

@@ -10,6 +10,8 @@ type TimelineDay = {
   rainChance?: number;
   icon?: "sunny" | "partly" | "cloudy" | "rain";
   description?: string;
+  // marks where the data came from
+  source?: "forecast" | "climatology";
 };
 
 type WeatherTimelineProps = {
@@ -19,7 +21,6 @@ type WeatherTimelineProps = {
 // Avoid timezone shift by forcing a local-time date
 function formatDisplayDate(iso?: string): string {
   if (!iso) return "";
-  // Treat as local noon on that calendar date
   const d = new Date(iso + "T12:00:00");
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(undefined, {
@@ -49,24 +50,28 @@ function getCardBackground(day: TimelineDay): string {
     typeof day.low === "number" ||
     typeof day.rainChance === "number";
 
+  // Climatology days: soft indigo tint
+  if (day.source === "climatology") {
+    return "#eef2ff";
+  }
+
   if (!hasWeather) {
-    // light gray when no weather data
-    return "#f3f4f6";
+    return "#f3f4f6"; // light gray when nothing
   }
 
   if (day.icon === "rain") {
-    // slightly cooler for rainy days
-    return "#e0f2fe";
+    return "#e0f2fe"; // cooler blue for rainy days
   }
 
-  // warm, sunny background for normal days
-  return "#fff7ed";
+  return "#fff7ed"; // warm peach for normal days
 }
 
 export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
   if (!itinerary || itinerary.length === 0) {
     return <p style={{ fontSize: "12px" }}>No itinerary available.</p>;
   }
+
+  const embarkationCity = itinerary[0]?.location.split(",")[0] ?? "departure port";
 
   return (
     <div
@@ -83,6 +88,8 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
         style={{
           display: "flex",
           justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "12px",
           fontSize: "11px",
           textTransform: "uppercase",
           letterSpacing: "0.08em",
@@ -90,17 +97,29 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
           marginBottom: "4px",
         }}
       >
-        <span>Daily itinerary &amp; forecast</span>
-        <span>
-          Weather based on forecast for{" "}
-          {itinerary[0]?.location.split(",")[0] ?? "departure port"} (local
-          time).
-        </span>
+        <div>
+          <div>Daily itinerary &amp; weather</div>
+          <div
+            style={{
+              fontSize: "9px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              marginTop: "2px",
+            }}
+          >
+            Live forecast shown when available · 30-year averages fill missing days
+          </div>
+        </div>
+
+        <div style={{ textAlign: "right" }}>
+          <div>Forecast + climate normals for {embarkationCity}.</div>
+        </div>
       </div>
 
       {itinerary.map((day) => {
         const bg = getCardBackground(day);
         const dateLabel = formatDisplayDate(day.date);
+        const isClimo = day.source === "climatology";
 
         return (
           <div
@@ -112,7 +131,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
               border: "1px solid rgba(249,115,22,0.35)",
             }}
           >
-            {/* Day + date */}
+            {/* Day + date row */}
             <div
               style={{
                 fontSize: "11px",
@@ -122,10 +141,37 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                 marginBottom: "4px",
                 display: "flex",
                 justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
               <span>Day {day.day}</span>
-              <span>{dateLabel}</span>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                {isClimo && (
+                  <span
+                    style={{
+                      fontSize: "9px",
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      padding: "2px 8px",
+                      borderRadius: "999px",
+                      border: "1px solid #4f46e5",
+                      background: "#e0e7ff",
+                      color: "#3730a3",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    30-year average (not a forecast)
+                  </span>
+                )}
+                <span>{dateLabel}</span>
+              </div>
             </div>
 
             {/* Location */}
@@ -164,8 +210,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                   typeof day.low === "number" && (
                     <div>
                       <strong>
-                        High {Math.round(day.high)}° • Low{" "}
-                        {Math.round(day.low)}°
+                        High {Math.round(day.high)}° • Low {Math.round(day.low)}°
                       </strong>
                     </div>
                   )}
@@ -175,7 +220,14 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                 )}
 
                 {day.description && (
-                  <div style={{ marginTop: "2px", fontSize: "11px" }}>
+                  <div
+                    style={{
+                      marginTop: "2px",
+                      fontSize: "11px",
+                      fontStyle: isClimo ? "italic" : "normal",
+                      color: isClimo ? "#4b5563" : "#374151",
+                    }}
+                  >
                     {day.description}
                   </div>
                 )}
@@ -184,7 +236,13 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                   !day.high &&
                   !day.low &&
                   !day.rainChance && (
-                    <div style={{ fontSize: "11px", fontStyle: "italic" }}>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontStyle: "italic",
+                        color: "#6b7280",
+                      }}
+                    >
                       No forecast available for this day yet – check closer to
                       your sail date.
                     </div>

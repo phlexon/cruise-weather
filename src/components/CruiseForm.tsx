@@ -1,47 +1,40 @@
 // src/components/CruiseForm.tsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import SailingsCalendar, { type Sailing } from "./SailingsCalendar";
 import {
   getCruiseOptionsFromApify,
+  getShipSailingsFromApify,
   type CruiseLineOption,
   type ShipOption,
 } from "../services/cruiseApi";
 
-type CruiseFormProps = {
-  onSubmit: (params: {
-    lineId: string;
-    shipId: string;
-    sailDate: string;
-    lineName: string;
-    shipName: string;
-  }) => void;
+export type CruiseSelection = {
+  lineId: string;
+  shipId: string;
+  sailDate: string; // "YYYY-MM-DD"
+  lineName?: string;
+  shipName?: string;
 };
 
-const ALLOWED_CRUISE_LINES = new Set<string>([
-  "Carnival Cruise Line Cruises",
-  "Celebrity Cruises",
-  "Disney Cruise Line Cruises",
-  "Holland America Cruises",
-  "Margaritaville at Sea Cruises",
-  "MSC Cruises",
-  "Norwegian Cruise Line Cruises",
-  "Princess Cruises",
-  "Royal Caribbean Cruises",
-  "Silversea Cruises",
-  "Viking Cruises",
-  "Virgin Voyages Cruises",
-]);
+type CruiseFormProps = {
+  onSubmit: (selection: CruiseSelection) => void;
+};
 
-const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
+export default function CruiseForm({ onSubmit }: CruiseFormProps) {
   const [lines, setLines] = useState<CruiseLineOption[]>([]);
-  const [ships, setShips] = useState<ShipOption[]>([]);
-  const [lineId, setLineId] = useState<string>(""); // start empty
-  const [shipId, setShipId] = useState<string>(""); // start empty
-  const [sailDate, setSailDate] = useState<string>("");
-
+  const [allShips, setAllShips] = useState<ShipOption[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [optionsError, setOptionsError] = useState<string | null>(null);
 
-  // Load cruise line + ship options from Apify once
+  const [selectedLineId, setSelectedLineId] = useState<string>("");
+  const [selectedShipId, setSelectedShipId] = useState<string>("");
+
+  const [sailDate, setSailDate] = useState<string>(""); // ISO string
+  const [calendarSailings, setCalendarSailings] = useState<Sailing[]>([]);
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
+
+  // --- Load cruise lines + ships from Apify -----------------------
+
   useEffect(() => {
     let cancelled = false;
 
@@ -49,41 +42,18 @@ const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
       try {
         setLoadingOptions(true);
         setOptionsError(null);
-
-        const { lines: apiLines, ships: apiShips } =
-          await getCruiseOptionsFromApify();
+        const { lines, ships } = await getCruiseOptionsFromApify();
         if (cancelled) return;
 
-        // Sort alphabetically by name
-        const sortedLines = [...apiLines].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
-        const sortedShips = [...apiShips].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
-
-        // Whitelist only the allowed cruise lines by name
-        const allowedLines = sortedLines.filter((line) =>
-          ALLOWED_CRUISE_LINES.has(line.name)
-        );
-
-        // Only keep ships that belong to those allowed lines
-        const allowedLineIds = new Set(allowedLines.map((l) => l.id));
-        const allowedShips = sortedShips.filter((ship) =>
-          allowedLineIds.has(ship.lineId)
-        );
-
-        setLines(allowedLines);
-        setShips(allowedShips);
-      } catch (e) {
-        console.error("Error loading cruise options from Apify:", e);
+        setLines(lines);
+        setAllShips(ships);
+      } catch (err) {
+        console.error("Error loading cruise options:", err);
         if (!cancelled) {
-          setOptionsError("Could not load cruise options. Please try again.");
+          setOptionsError("There was a problem loading cruise options.");
         }
       } finally {
-        if (!cancelled) {
-          setLoadingOptions(false);
-        }
+        if (!cancelled) setLoadingOptions(false);
       }
     }
 
@@ -93,123 +63,249 @@ const CruiseForm: React.FC<CruiseFormProps> = ({ onSubmit }) => {
     };
   }, []);
 
-  // Only show ships for the selected line
-  const filteredShips = useMemo(
-    () => ships.filter((s) => lineId && s.lineId === lineId),
-    [ships, lineId]
-  );
+  // Filter ships by line
+  const shipsForLine = useMemo(() => {
+    if (!selectedLineId) return [];
+    return allShips
+      .filter((s) => s.lineId === selectedLineId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allShips, selectedLineId]);
 
-  // When the line changes, auto-select the first ship for that line
-  useEffect(() => {
-    if (!lineId) {
-      setShipId("");
-      return;
+  // --- Handlers ---------------------------------------------------
+
+  const handleLineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const lineId = e.target.value;
+    setSelectedLineId(lineId);
+    setSelectedShipId("");
+    setCalendarSailings([]);
+    setSailDate("");
+  };
+
+  const handleShipChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const shipId = e.target.value;
+    setSelectedShipId(shipId);
+    setCalendarSailings([]);
+    setSailDate("");
+
+    const ship = allShips.find((s) => s.id === shipId);
+    if (!ship) return;
+
+    try {
+      setLoadingCalendar(true);
+      const sailings = await getShipSailingsFromApify(ship.name);
+      setCalendarSailings(
+        sailings.map((s) => ({
+          date: s.departIso,
+          title: s.title,
+        }))
+      );
+    } catch (err) {
+      console.error("Error loading ship sailings:", err);
+      setCalendarSailings([]);
+    } finally {
+      setLoadingCalendar(false);
     }
+  };
 
-    const firstShipForLine = filteredShips[0];
-    if (firstShipForLine) {
-      setShipId(firstShipForLine.id);
-    } else {
-      setShipId("");
-    }
-  }, [lineId, filteredShips]);
+  // Calendar → auto submit
+  const handleCalendarSelect = (dateIso: string) => {
+    setSailDate(dateIso);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!lineId || !shipId || !sailDate) return;
+    const line = lines.find((l) => l.id === selectedLineId);
+    const ship = allShips.find((s) => s.id === selectedShipId);
 
-    const line = lines.find((l) => l.id === lineId);
-    const ship = ships.find((s) => s.id === shipId);
+    if (!line || !ship) return;
 
     onSubmit({
-      lineId,
-      shipId,
-      sailDate,
-      lineName: line?.name ?? "",
-      shipName: ship?.name ?? "",
+      lineId: line.id,
+      shipId: ship.id,
+      sailDate: dateIso,
+      lineName: line.name,
+      shipName: ship.name,
     });
   };
 
+  const handleSailDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSailDate(e.target.value);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const line = lines.find((l) => l.id === selectedLineId);
+    const ship = allShips.find((s) => s.id === selectedShipId);
+
+    if (!line || !ship || !sailDate) return;
+
+    onSubmit({
+      lineId: line.id,
+      shipId: ship.id,
+      sailDate,
+      lineName: line.name,
+      shipName: ship.name,
+    });
+  };
+
+  const canSearch =
+    !!selectedLineId && !!selectedShipId && !!sailDate && !loadingOptions;
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl bg-white/80 p-4 shadow-md"
-    >
-      <h2 className="text-xl font-semibold text-slate-800">
-        Check Your Cruise Weather
-      </h2>
+    <form onSubmit={handleSubmit}>
+      {/* Cruise line */}
+      <label
+        style={{
+          display: "block",
+          fontSize: "12px",
+          fontWeight: 600,
+          marginBottom: "4px",
+          color: "#374151",
+        }}
+      >
+        Cruise Line
+      </label>
+      <select
+        value={selectedLineId}
+        onChange={handleLineChange}
+        style={{
+          width: "100%",
+          fontSize: "13px",
+          padding: "8px 10px",
+          borderRadius: "8px",
+          border: "1px solid #d1d5db",
+          marginBottom: "10px",
+        }}
+      >
+        <option value="">Please Select One</option>
+        {lines.map((line) => (
+          <option key={line.id} value={line.id}>
+            {line.name}
+          </option>
+        ))}
+      </select>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Cruise Line */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-slate-700">
-            Cruise Line
-          </label>
-          <select
-            value={lineId}
-            onChange={(e) => setLineId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            disabled={loadingOptions || lines.length === 0}
-          >
-            <option value="">Please Select One</option>
-            {lines.map((line) => (
-              <option key={line.id} value={line.id}>
-                {line.name}
-              </option>
-            ))}
-          </select>
+      {/* Ship */}
+      <label
+        style={{
+          display: "block",
+          fontSize: "12px",
+          fontWeight: 600,
+          marginBottom: "4px",
+          color: "#374151",
+        }}
+      >
+        Ship
+      </label>
+      <select
+        value={selectedShipId}
+        onChange={handleShipChange}
+        disabled={!selectedLineId}
+        style={{
+          width: "100%",
+          fontSize: "13px",
+          padding: "8px 10px",
+          borderRadius: "8px",
+          border: "1px solid #d1d5db",
+          marginBottom: "10px",
+          backgroundColor: !selectedLineId ? "#f9fafb" : "white",
+        }}
+      >
+        <option value="">Please Select One</option>
+        {shipsForLine.map((ship) => (
+          <option key={ship.id} value={ship.id}>
+            {ship.name}
+          </option>
+        ))}
+      </select>
+
+      {/* Calendar of sailings (only after ship is chosen) */}
+      {selectedShipId && (
+        <div style={{ marginBottom: "12px" }}>
+          {loadingCalendar ? (
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#6b7280",
+                marginTop: "4px",
+              }}
+            >
+              Loading upcoming sailings…
+            </div>
+          ) : calendarSailings.length ? (
+            <SailingsCalendar
+              sailings={calendarSailings}
+              selectedDate={sailDate}
+              onSelectDate={handleCalendarSelect}
+            />
+          ) : (
+            <div
+              style={{
+                marginTop: "4px",
+                fontSize: "11px",
+                color: "#6b7280",
+                fontStyle: "italic",
+              }}
+            >
+              No sailings found for this ship in the dataset.
+            </div>
+          )}
         </div>
-
-        {/* Ship */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-slate-700">Ship</label>
-          <select
-            value={shipId}
-            onChange={(e) => setShipId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            disabled={loadingOptions || !lineId || filteredShips.length === 0}
-          >
-            <option value="">Please Select One</option>
-            {filteredShips.map((ship) => (
-              <option key={ship.id} value={ship.id}>
-                {ship.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Sail Date */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-slate-700">
-            Sail Date
-          </label>
-          <input
-            type="date"
-            value={sailDate}
-            onChange={(e) => setSailDate(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-      </div>
-
-      {loadingOptions && (
-        <p className="text-xs text-slate-500">
-          Loading cruise lines & ships…
-        </p>
       )}
-      {optionsError && (
-        <p className="text-xs text-red-600">{optionsError}</p>
-      )}
+
+      {/* Fallback manual date picker & button */}
+      <label
+        style={{
+          display: "block",
+          fontSize: "12px",
+          fontWeight: 600,
+          marginBottom: "4px",
+          color: "#374151",
+        }}
+      >
+        Sail Date
+      </label>
+      <input
+        type="date"
+        value={sailDate}
+        onChange={handleSailDateChange}
+        style={{
+          width: "100%",
+          fontSize: "13px",
+          padding: "8px 10px",
+          borderRadius: "8px",
+          border: "1px solid #d1d5db",
+          marginBottom: "12px",
+        }}
+      />
 
       <button
         type="submit"
-        className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-60"
-        disabled={loadingOptions || !lineId || !shipId || !sailDate}
+        disabled={!canSearch}
+        style={{
+          width: "100%",
+          marginTop: "4px",
+          padding: "10px 12px",
+          borderRadius: "999px",
+          border: "none",
+          backgroundColor: canSearch ? "#2563eb" : "#9ca3af",
+          color: "white",
+          fontSize: "14px",
+          fontWeight: 600,
+          cursor: canSearch ? "pointer" : "default",
+        }}
       >
-        Show My Cruise Weather
+        Search Cruise
       </button>
+
+      {optionsError && (
+        <p
+          style={{
+            marginTop: "6px",
+            fontSize: "11px",
+            color: "#b91c1c",
+          }}
+        >
+          {optionsError}
+        </p>
+      )}
     </form>
   );
-};
-
-export default CruiseForm;
+}

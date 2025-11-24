@@ -35,8 +35,9 @@ type NceiMonthlyNormalRow = {
 
 const nceiNormalsCache: Record<string, NceiMonthlyNormalRow[]> = {};
 
-// Base URL for proxy (same origin by default)
-const NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
+// Base URL for proxy (same origin by default, but we normalize & allow empty)
+const RAW_NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
+const NCEI_PROXY_BASE = RAW_NCEI_PROXY_BASE.replace(/\/+$/, "");
 
 // --- Helpers -------------------------------------------------------
 
@@ -63,6 +64,15 @@ function mapTomorrowCodeToIcon(code: number): WeatherIcon {
 async function getNceiMonthlyNormalsForStation(
   stationId: string
 ): Promise<NceiMonthlyNormalRow[]> {
+  // If no proxy base is configured, just skip climatology gracefully.
+  if (!NCEI_PROXY_BASE) {
+    console.warn(
+      "[NCEI] VITE_NCEI_PROXY_BASE_URL is not set; skipping climatology for station",
+      stationId
+    );
+    return [];
+  }
+
   if (nceiNormalsCache[stationId]) {
     return nceiNormalsCache[stationId];
   }
@@ -71,17 +81,38 @@ async function getNceiMonthlyNormalsForStation(
     stationId
   )}`;
 
-  const res = await fetch(url);
-  const text = await res.text();
+  let res: Response;
+  let text: string;
 
   try {
-    const json = JSON.parse(text) as NceiMonthlyNormalRow[] | NceiMonthlyNormalRow;
+    res = await fetch(url);
+    text = await res.text();
+  } catch (err) {
+    console.error("[NCEI] Fetch to proxy failed:", err);
+    return [];
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+
+  if (!res.ok || !contentType.includes("application/json")) {
+    console.error(
+      "NCEI normals proxy returned non-JSON or error response:",
+      text.slice(0, 200)
+    );
+    // Don't blow up the app; just skip climatology in this case.
+    return [];
+  }
+
+  try {
+    const json = JSON.parse(text) as
+      | NceiMonthlyNormalRow[]
+      | NceiMonthlyNormalRow;
     const rows = Array.isArray(json) ? json : [json];
     nceiNormalsCache[stationId] = rows;
     return rows;
-  } catch {
-    console.error("NCEI normals proxy returned non-JSON:", text.slice(0, 200));
-    throw new Error("NCEI normals proxy did not return JSON");
+  } catch (err) {
+    console.error("[NCEI] Failed to parse proxy JSON:", err, text.slice(0, 200));
+    return [];
   }
 }
 
@@ -122,6 +153,11 @@ async function fillMissingWithClimatology(
     normals = await getNceiMonthlyNormalsForStation(stationId);
   } catch (err) {
     console.error("Failed to get NCEI climatology:", err);
+    return existing;
+  }
+
+  if (!normals || normals.length === 0) {
+    // No normals available; just return what we have from Tomorrow.io
     return existing;
   }
 
