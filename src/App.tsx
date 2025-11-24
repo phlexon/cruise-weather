@@ -11,6 +11,8 @@ import {
 } from "./services/cruiseApi";
 import { getDailyForecastsForCity } from "./services/weather";
 import { sampleItinerary } from "./data/mockData";
+import { getNceiStationIdForCity } from "./data/portClimateMeta";
+
 
 type CruiseSelection = {
   lineId: string;
@@ -29,6 +31,8 @@ type ItineraryDay = {
   rainChance?: number;
   icon?: "sunny" | "partly" | "cloudy" | "rain";
   description?: string;
+  // new: whether the underlying data is a real forecast or climatology
+  source?: "forecast" | "climatology";
 };
 
 export default function App() {
@@ -163,44 +167,57 @@ export default function App() {
 
       // 3) enrich with Tomorrow.io
       try {
-        const embarkationLocation = mapped[0]?.location ?? "Miami";
-        const embarkationCity = embarkationLocation.split(",")[0];
+const embarkationLocation = mapped[0]?.location ?? "Miami";
+// e.g. "Fort Lauderdale, Florida (Embarkation)" -> "Fort Lauderdale"
+const embarkationCity = embarkationLocation.split(",")[0];
 
-        const forecastsByDate = await getDailyForecastsForCity(
-          embarkationCity,
-          isoDates
-        );
+// Look up NCEI station ID for this city (if we know it)
+const nceiStationId = getNceiStationIdForCity(embarkationCity);
 
-        let anyWeather = false;
+const forecastsByDate = await getDailyForecastsForCity(
+  embarkationCity,
+  isoDates,
+  nceiStationId ? { nceiStationId } : undefined
+);
 
-        mapped = mapped.map((day, idx) => {
-          const dateKey = isoDates[idx];
-          const forecast = forecastsByDate[dateKey];
+let anyWeather = false;
 
-          // always use aligned date for display
-          const baseDay: ItineraryDay = {
-            ...day,
-            date: isoDates[idx],
-          };
+mapped = mapped.map((day, idx) => {
+  const dateKey = isoDates[idx];
+  const forecast = forecastsByDate[dateKey];
 
-          if (!forecast) {
-            return {
-              ...baseDay,
-              description: "Weather not available for this day yet.",
-            };
-          }
+  // always use aligned date for display
+  const baseDay: ItineraryDay = {
+    ...day,
+    date: isoDates[idx],
+  };
 
-          anyWeather = true;
+  if (!forecast) {
+    return {
+      ...baseDay,
+      description: "Weather not available for this day yet.",
+    };
+  }
 
-          return {
-            ...baseDay,
-            high: forecast.high,
-            low: forecast.low,
-            rainChance: forecast.rainChance,
-            icon: forecast.icon,
-            description: forecast.description,
-          };
-        });
+  anyWeather = true;
+
+  // If this day came from climatology, add a little disclaimer
+  const description =
+    forecast.source === "climatology"
+      ? `${forecast.description} (based on historical averages, not a live forecast).`
+      : forecast.description;
+
+  return {
+    ...baseDay,
+    high: forecast.high,
+    low: forecast.low,
+    rainChance: forecast.rainChance,
+    icon: forecast.icon,
+    description,
+    source: forecast.source,
+  };
+});
+
 
         setHasWeather(anyWeather);
       } catch (weatherErr: any) {
