@@ -13,18 +13,10 @@ export type DailyForecast = {
   source: WeatherSource; // "forecast" (Tomorrow.io) or "climatology" (NCEI)
 };
 
-// Optional options for fallback behavior
 export type ForecastOptions = {
-  /**
-   * NCEI station ID, e.g. "USW00012839" for Miami Intl Airport.
-   * If provided, days missing from Tomorrow.io will be filled using
-   * NOAA/NCEI 1991–2020 monthly climate normals for that station.
-   */
+  /** NCEI station ID, e.g. "USW00012839" for Miami Intl Airport. */
   nceiStationId?: string;
 };
-
-const NCEI_PROXY_BASE =
-  import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? ""; // "" = same origin
 
 // In-memory cache: key = city|dates|station => { [date]: DailyForecast }
 const forecastCache: Record<string, Record<string, DailyForecast>> = {};
@@ -41,6 +33,10 @@ type NceiMonthlyNormalRow = {
 };
 
 const nceiNormalsCache: Record<string, NceiMonthlyNormalRow[]> = {};
+
+// Base URL for the proxy (same origin by default)
+const NCEI_PROXY_BASE =
+  import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
 
 // --- Helpers -------------------------------------------------------
 
@@ -62,8 +58,7 @@ function mapTomorrowCodeToIcon(code: number): WeatherIcon {
 
 /**
  * Fetch NCEI monthly climate normals (1991–2020) for a given station.
- * Uses your own backend proxy at /api/ncei-normals, which in turn calls
- * NCEI's "normals-monthly-1991-2020" dataset. This avoids browser CORS issues.
+ * Calls your backend proxy at /api/ncei-normals to avoid browser CORS.
  */
 async function getNceiMonthlyNormalsForStation(
   stationId: string
@@ -72,7 +67,6 @@ async function getNceiMonthlyNormalsForStation(
     return nceiNormalsCache[stationId];
   }
 
-  // If NCEI_PROXY_BASE is "", this will hit /api/ncei-normals on the same origin
   const url = `${NCEI_PROXY_BASE}/api/ncei-normals?stationId=${encodeURIComponent(
     stationId
   )}`;
@@ -80,7 +74,6 @@ async function getNceiMonthlyNormalsForStation(
   const res = await fetch(url);
   const text = await res.text();
 
-  // Defensive: make sure we actually got JSON, not an HTML/TS file
   try {
     const json = JSON.parse(text) as
       | NceiMonthlyNormalRow[]
@@ -89,12 +82,14 @@ async function getNceiMonthlyNormalsForStation(
     const rows = Array.isArray(json) ? json : [json];
     nceiNormalsCache[stationId] = rows;
     return rows;
-  } catch (err) {
-    console.error("NCEI normals proxy returned non-JSON:", text.slice(0, 200));
+  } catch {
+    console.error(
+      "NCEI normals proxy returned non-JSON:",
+      text.slice(0, 200)
+    );
     throw new Error("NCEI normals proxy did not return JSON");
   }
 }
-
 
 /**
  * Build DailyForecast entries for specific dates using NCEI monthly normals.
@@ -118,7 +113,6 @@ async function fillMissingWithClimatology(
     return existing;
   }
 
-  // Index normals by month (1..12)
   const normalsByMonth = new Map<number, NceiMonthlyNormalRow>();
   for (const row of normals) {
     const m = parseInt(row.MONTH, 10);
@@ -155,11 +149,9 @@ async function fillMissingWithClimatology(
         : existing[iso]?.low ?? NaN;
 
     if (Number.isNaN(high) || Number.isNaN(low)) {
-      continue; // can't construct a meaningful climatology record
+      continue;
     }
 
-    // Very rough proxy for "raininess" based on monthly precip (inches).
-    // You can tweak this formula or keep it simple.
     const precipInches = prcp != null ? parseFloat(prcp) : 0;
     const rainChance = Math.max(
       0,
@@ -170,7 +162,7 @@ async function fillMissingWithClimatology(
       high,
       low,
       rainChance,
-      icon: "partly", // generic icon for climatology days
+      icon: "partly",
       description: `Typical conditions for this time of year (30-year average). High ~${Math.round(
         high
       )}°, low ~${Math.round(low)}°, avg raininess for this month.`,
@@ -183,15 +175,6 @@ async function fillMissingWithClimatology(
 
 // --- Main API ------------------------------------------------------
 
-/**
- * Get daily forecasts for a given city and list of ISO dates ("YYYY-MM-DD").
- *
- * Primary source: Tomorrow.io daily forecast (v4).
- * Optional fallback: NCEI monthly climate normals (1991–2020) for
- * a given station, used only for dates that Tomorrow.io does not cover.
- *
- * Returns an object keyed by date.
- */
 export async function getDailyForecastsForCity(
   city: string,
   dates: string[],
@@ -207,17 +190,14 @@ export async function getDailyForecastsForCity(
     throw new Error("City or dates missing for forecast request.");
   }
 
-  // ---- cache check ----
   const cacheKey = makeCacheKey(city, dates, options);
   if (forecastCache[cacheKey]) {
     return forecastCache[cacheKey];
   }
 
-  // Assume dates[] are already sorted and ISO (YYYY-MM-DD).
   const startDate = dates[0];
   const endDate = dates[dates.length - 1];
 
-  // Build Tomorrow.io v4 forecast URL
   const url = new URL("https://api.tomorrow.io/v4/weather/forecast");
   url.searchParams.set("location", city);
   url.searchParams.set("timesteps", "1d");
@@ -230,7 +210,6 @@ export async function getDailyForecastsForCity(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    // If Tomorrow.io fails completely, try pure climatology if possible
     if (options?.nceiStationId) {
       console.warn(
         "Tomorrow.io error, falling back entirely to climatology:",
@@ -254,16 +233,14 @@ export async function getDailyForecastsForCity(
   }
 
   const data = await res.json();
-
-  // Tomorrow.io daily forecasts live under data.timelines.daily[]
   const series: any[] = data?.timelines?.daily || [];
 
   const byDate: Record<string, DailyForecast> = {};
 
   if (series.length) {
     for (const point of series) {
-      const iso = point.time as string; // e.g. "2025-11-22T00:00:00Z"
-      const dateKey = iso.slice(0, 10); // "YYYY-MM-DD"
+      const iso = point.time as string;
+      const dateKey = iso.slice(0, 10);
       const values = point.values || {};
 
       const high = values.temperatureMax;
@@ -289,8 +266,14 @@ export async function getDailyForecastsForCity(
     }
   }
 
-  // Check which requested dates we actually have from Tomorrow.io
+  // --- Missing dates + debug log (single declaration) ---
   const missingDates = dates.filter((d) => !byDate[d]);
+
+  console.log("Weather debug:", {
+    city,
+    stationId: options?.nceiStationId ?? null,
+    missingDates,
+  });
 
   // If Tomorrow.io covers all requested days, we're done
   if (!missingDates.length) {
@@ -305,7 +288,7 @@ export async function getDailyForecastsForCity(
       byDate,
       options.nceiStationId
     );
-    // If we still ended up with nothing, treat as error; otherwise return what we have
+
     const finalMissing = dates.filter((d) => !merged[d]);
     if (finalMissing.length === dates.length) {
       const available = Object.keys(merged);
@@ -320,7 +303,7 @@ export async function getDailyForecastsForCity(
     return merged;
   }
 
-  // No climatology fallback configured: preserve your original behavior
+  // No climatology fallback configured: preserve original behavior
   const matchingDates = dates.filter((d) => byDate[d]);
   if (!matchingDates.length) {
     const available = Object.keys(byDate);
