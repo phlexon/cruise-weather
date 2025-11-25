@@ -1,27 +1,19 @@
 // src/services/cruiseApi.ts
 
-// ---------- Dataset config ----------
+// ---------------- Apify dataset config ----------------
 
-const APIFY_DATASET_ID = import.meta.env.VITE_APIFY_DATASET_ID;
-
-if (!APIFY_DATASET_ID) {
-  console.warn(
-    "VITE_APIFY_DATASET_ID is missing. Cruise data will fail to load."
-  );
-}
+const DATASET_ID = import.meta.env.VITE_APIFY_DATASET_ID;
 
 // src/services/cruiseApi.ts
 
-// 🔴 IMPORTANT: put the SAME dataset ID here that worked earlier in your app
-// Example: "FfayYPyD3xppEzvzN" – but replace this with YOUR real ID.
 const APIFY_DATASET_URL =
-  "https://api.apify.com/v2/datasets/UMBo39qEIxobhPEUY/items?format=json&limit=1000&clean=true";
+  "https://api.apify.com/v2/datasets/UMBo39qEIxobhPEUY/items?format=json&clean=true&limit=5000";
 
 
 
-// ---------- Whitelist of cruise lines ----------
+// ---------------- Whitelist of cruise lines ----------------
 
-const WHITELIST_CRUISE_LINES = new Set<string>([
+const ALLOWED_CRUISE_LINES = new Set<string>([
   "Carnival Cruise Line Cruises",
   "Celebrity Cruises",
   "Disney Cruise Line Cruises",
@@ -36,7 +28,7 @@ const WHITELIST_CRUISE_LINES = new Set<string>([
   "Virgin Voyages Cruises",
 ]);
 
-// ---------- option types ----------
+// ---------------- Option types ----------------
 
 export type CruiseLineOption = {
   id: string;
@@ -49,6 +41,8 @@ export type ShipOption = {
   lineId: string;
 };
 
+// ---------------- Internal helpers ----------------
+
 function slugifyId(input: string): string {
   return input
     .toLowerCase()
@@ -57,7 +51,20 @@ function slugifyId(input: string): string {
     .replace(/(^-|-$)+/g, "");
 }
 
-// ---------- Apify base type ----------
+/**
+ * Normalize ship / line names for fuzzy matching.
+ * Strips punctuation/whitespace and lowercases.
+ */
+function normalizeName(input: string | null | undefined): string {
+  if (!input) return "";
+  return input
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
+}
+
+// ---------------- Apify row shape ----------------
 
 type ApifyCruise = {
   id: string;
@@ -69,100 +76,37 @@ type ApifyCruise = {
   [key: string]: any; // stop_1_text, stop_2_date, etc.
 };
 
-// ---------- fetch helper ----------
+// ---------------- Dataset fetch + cache ----------------
+
+let apifyCache: ApifyCruise[] | null = null;
+let apifyCachePromise: Promise<ApifyCruise[]> | null = null;
 
 async function fetchApifyDataset(): Promise<ApifyCruise[]> {
+  if (apifyCache) return apifyCache;
+  if (apifyCachePromise) return apifyCachePromise;
+
   if (!APIFY_DATASET_URL) {
-    throw new Error("APIFY_DATASET_URL is not configured.");
+    console.warn("APIFY_DATASET_URL is empty – no cruise data will be loaded.");
+    apifyCache = [];
+    return apifyCache;
   }
 
-  const res = await fetch(APIFY_DATASET_URL);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    console.error("Apify dataset error:", res.status, text);
-    throw new Error(`Apify dataset error: ${res.status}`);
-  }
-  const cruises: ApifyCruise[] = await res.json();
-  return cruises ?? [];
+  apifyCachePromise = (async () => {
+    const res = await fetch(APIFY_DATASET_URL);
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("Apify dataset error:", res.status, text.slice(0, 200));
+      throw new Error(`Apify dataset error: ${res.status}`);
+    }
+    const cruises: ApifyCruise[] = await res.json();
+    apifyCache = cruises ?? [];
+    return apifyCache;
+  })();
+
+  return apifyCachePromise;
 }
 
-// ---------- dynamic cruise options ----------
-
-/**
- * Build dynamic cruise lines + ship lists from the Apify dataset,
- * filtered to the whitelisted cruise lines.
- */
-export async function getCruiseOptionsFromApify(): Promise<{
-  lines: CruiseLineOption[];
-  ships: ShipOption[];
-}> {
-  const cruises = await fetchApifyDataset();
-
-  const lineMapAll = new Map<string, CruiseLineOption>();
-  const shipsAll: ShipOption[] = [];
-
-  for (const c of cruises) {
-    const lineName = c.cruise_line?.trim();
-    const shipName = c.ship_name?.trim();
-    if (!lineName || !shipName) continue;
-
-    const lineId = slugifyId(lineName);
-    if (!lineMapAll.has(lineId)) {
-      lineMapAll.set(lineId, { id: lineId, name: lineName });
-    }
-
-    const shipId = slugifyId(`${lineName}-${shipName}`);
-    if (!shipsAll.some((s) => s.id === shipId)) {
-      shipsAll.push({ id: shipId, name: shipName, lineId });
-    }
-  }
-
-  // Apply whitelist to lines
-  const whitelistedLines = Array.from(lineMapAll.values()).filter((line) =>
-    WHITELIST_CRUISE_LINES.has(line.name)
-  );
-
-  let finalLines: CruiseLineOption[];
-  let finalShips: ShipOption[];
-
-  if (whitelistedLines.length > 0) {
-    // ✅ Normal case: whitelist matches something
-    const allowedLineIds = new Set(whitelistedLines.map((l) => l.id));
-    finalLines = whitelistedLines.sort((a, b) => a.name.localeCompare(b.name));
-    finalShips = shipsAll
-      .filter((s) => allowedLineIds.has(s.lineId))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  } else {
-    // ⚠️ Fallback: whitelist matched nothing → show ALL lines/ships
-    console.warn(
-      "Cruise whitelist matched no lines; falling back to all cruise lines."
-    );
-    finalLines = Array.from(lineMapAll.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-    finalShips = shipsAll.sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  return {
-    lines: finalLines,
-    ships: finalShips,
-  };
-}
-
-
-// ---------- itinerary types & helpers ----------
-
-export type CruiseDay = {
-  dayNumber: number;
-  date: string; // "YYYY-MM-DD"
-  portName: string;
-  rawStopText: string;
-};
-
-export type CruiseItineraryRequest = {
-  shipName: string; // e.g. "Allure Of The Seas"
-  sailDate: string; // "2025-11-30"
-};
+// ---------------- Date helpers ----------------
 
 /**
  * Format "2025-11-30" -> "2025 Nov 30" to match Apify `cruise_date`
@@ -195,31 +139,6 @@ function formatToApifyDateLabel(sailDate: string): string {
       : monthStr;
 
   return `${yearStr} ${monthLabel} ${dayStr}`;
-}
-
-/** Turn "Departing from Miami, Florida" into "Miami, Florida" */
-function extractPortName(text: string): string {
-  return text.replace(/^Departing from\s*/i, "").trim();
-}
-
-/** Parse "09 Nov 16:00" or "12 Nov 08:00 - 18:00" to "YYYY-MM-DD" */
-function parseStopDateToIso(stopDate: string, cruiseDateLabel: string): string {
-  // cruiseDateLabel looks like "2025 Nov 09"
-  const yearMatch = cruiseDateLabel.match(/^(\d{4})/);
-  const year = yearMatch ? yearMatch[1] : "2025";
-
-  const m = stopDate.match(/(\d{2})\s+([A-Za-z]{3})/);
-  if (!m) return cruiseDateLabel; // fallback
-  const [, dayStr, monthStr] = m;
-
-  const baseStr = `${year} ${monthStr} ${dayStr}`;
-  const d = new Date(baseStr);
-  if (Number.isNaN(d.getTime())) return cruiseDateLabel;
-
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
 }
 
 /** "2025 Nov 09" -> "2025-11-09" */
@@ -273,7 +192,24 @@ function addDaysIso(isoDate: string, days: number): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// ---------- summaries & search ----------
+/** Turn "Departing from Miami, Florida" into "Miami, Florida" */
+function extractPortName(text: string): string {
+  return text.replace(/^Departing from\s*/i, "").trim();
+}
+
+// ---------------- Public types ----------------
+
+export type CruiseDay = {
+  dayNumber: number;
+  date: string; // "YYYY-MM-DD"
+  portName: string;
+  rawStopText: string;
+};
+
+export type CruiseItineraryRequest = {
+  shipName: string; // e.g. "Allure Of The Seas"
+  sailDate: string; // "2025-11-30"
+};
 
 export type CruiseSummary = {
   id: string;
@@ -284,12 +220,14 @@ export type CruiseSummary = {
   raw: ApifyCruise;
 };
 
+// ---------------- De-dupe helpers ----------------
+
 /** De-duplicate cruise summaries for the same logical sailing. */
 function dedupeCruiseSummaries(cruises: CruiseSummary[]): CruiseSummary[] {
   const map = new Map<string, CruiseSummary>();
 
   for (const c of cruises) {
-    const key = `${c.shipName.trim()}|${c.departIso}|${c.title.trim()}`;
+    const key = `${normalizeName(c.shipName)}|${c.departIso}|${c.title.trim()}`;
     const existing = map.get(key);
 
     if (!existing) {
@@ -309,9 +247,58 @@ function dedupeCruiseSummaries(cruises: CruiseSummary[]): CruiseSummary[] {
   return Array.from(map.values());
 }
 
+// ---------------- Cruise options (lines + ships) ----------------
+
+/**
+ * Build dynamic cruise lines + ship lists from the Apify dataset,
+ * filtered to the whitelisted cruise lines.
+ */
+export async function getCruiseOptionsFromApify(): Promise<{
+  lines: CruiseLineOption[];
+  ships: ShipOption[];
+}> {
+  const cruises = await fetchApifyDataset();
+
+  const lineMap = new Map<string, CruiseLineOption>();
+  const ships: ShipOption[] = [];
+
+  for (const c of cruises) {
+    const rawLineName = c.cruise_line?.trim();
+    const shipName = c.ship_name?.trim();
+    if (!rawLineName || !shipName) continue;
+
+    // Only include whitelisted cruise lines
+    if (!ALLOWED_CRUISE_LINES.has(rawLineName)) continue;
+
+    const lineId = slugifyId(rawLineName);
+    if (!lineMap.has(lineId)) {
+      lineMap.set(lineId, { id: lineId, name: rawLineName });
+    }
+
+    const shipId = slugifyId(`${rawLineName}-${shipName}`);
+    if (!ships.some((s) => s.id === shipId)) {
+      ships.push({ id: shipId, name: shipName, lineId });
+    }
+  }
+
+  const lines = Array.from(lineMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  ships.sort((a, b) => {
+    const lineCmp = a.lineId.localeCompare(b.lineId);
+    if (lineCmp !== 0) return lineCmp;
+    return a.name.localeCompare(b.name);
+  });
+
+  return { lines, ships };
+}
+
+// ---------------- Search by date (used for calendar / matching) ----------------
+
 /**
  * Return all cruises that depart on the given sailDate (YYYY-MM-DD).
- * Results are de-duplicated and filtered to whitelisted cruise lines.
+ * Results are de-duplicated so you don't see the same ship/route multiple times.
  */
 export async function searchCruisesByDate(
   sailDate: string
@@ -321,11 +308,6 @@ export async function searchCruisesByDate(
 
   for (const c of cruises) {
     if (!c.cruise_date) continue;
-
-    // Only keep whitelisted cruise lines
-    const lineName = c.cruise_line?.trim();
-    if (!lineName || !WHITELIST_CRUISE_LINES.has(lineName)) continue;
-
     const iso = apifyDateLabelToIso(c.cruise_date);
     if (!iso) continue;
 
@@ -343,6 +325,7 @@ export async function searchCruisesByDate(
 
   const deduped = dedupeCruiseSummaries(matches);
 
+  // Optional: sort for nicer display (by ship then title)
   deduped.sort((a, b) => {
     const shipCmp = a.shipName.localeCompare(b.shipName);
     if (shipCmp !== 0) return shipCmp;
@@ -352,31 +335,41 @@ export async function searchCruisesByDate(
   return deduped;
 }
 
+// ---------------- Ship sailings for calendar ----------------
+
 /**
- * Return all sailings for a given ship name (for the calendar).
- * Uses the same CruiseSummary shape.
+ * All upcoming sailings for a given ship name (used by SailingsCalendar).
+ * Uses fuzzy normalization so slight name differences in the dataset
+ * won't break matching.
  */
 export async function getShipSailingsFromApify(
   shipName: string
 ): Promise<CruiseSummary[]> {
-  if (!shipName) return [];
-
   const cruises = await fetchApifyDataset();
-  const matches: CruiseSummary[] = [];
+  const targetNorm = normalizeName(shipName);
 
-  const targetShip = shipName.trim().toLowerCase();
+  const candidates: CruiseSummary[] = [];
 
   for (const c of cruises) {
-    const lineName = c.cruise_line?.trim();
-    if (!lineName || !WHITELIST_CRUISE_LINES.has(lineName)) continue;
+    if (!c.ship_name || !c.cruise_date) continue;
 
-    const thisShip = c.ship_name?.trim().toLowerCase();
-    if (!thisShip || thisShip !== targetShip) continue;
+    const shipNorm = normalizeName(c.ship_name);
+    if (!shipNorm) continue;
+
+    // Strong match: exact normalized name
+    const strongMatch = shipNorm === targetNorm;
+
+    // Fuzzy: one contains the other (handles small differences)
+    const fuzzyMatch =
+      !strongMatch &&
+      (shipNorm.includes(targetNorm) || targetNorm.includes(shipNorm));
+
+    if (!strongMatch && !fuzzyMatch) continue;
 
     const iso = apifyDateLabelToIso(c.cruise_date);
     if (!iso) continue;
 
-    matches.push({
+    candidates.push({
       id: c.id,
       title: c.cruise_title ?? "",
       cruiseLine: c.cruise_line ?? "",
@@ -386,20 +379,28 @@ export async function getShipSailingsFromApify(
     });
   }
 
-  const deduped = dedupeCruiseSummaries(matches);
+  if (!candidates.length) {
+    console.warn("[Ship sailings] No matches for ship:", shipName);
+    return [];
+  }
+
+  const deduped = dedupeCruiseSummaries(candidates);
 
   deduped.sort((a, b) => a.departIso.localeCompare(b.departIso));
+
+  console.log("[Ship sailings] matches for", shipName, "count:", deduped.length, {
+    dates: deduped.map((c) => c.departIso),
+  });
 
   return deduped;
 }
 
-// ---------- itinerary lookup (ship + date, expanded with sea days) ----------
+// ---------------- Itinerary lookup (ship + sail date) ----------------
 
 /**
  * Fetch itinerary for a given ship & sail date from Apify dataset.
- * Returns one CruiseDay per *calendar day* of the cruise, filling
- * gaps between ports with "Day at sea" so day counts match the
- * advertised length (e.g. 14 days).
+ * Returns an array of CruiseDay objects (one per stop), aligned so
+ * Day 1 is the selected sail date and "at sea" days are preserved.
  */
 export async function getItineraryFromApify(
   params: CruiseItineraryRequest
@@ -414,26 +415,25 @@ export async function getItineraryFromApify(
     return [];
   }
 
-  const targetShip = params.shipName.trim().toLowerCase();
+  const targetShipNorm = normalizeName(params.shipName);
   const targetLabel = formatToApifyDateLabel(params.sailDate); // "2025 Nov 30"
   const targetIso = params.sailDate; // "YYYY-MM-DD"
+  console.log("Looking for ship/date:", targetShipNorm, targetLabel);
 
-  console.log("Looking for ship/date:", targetShip, targetLabel);
-
-  // Build candidate list: same ship AND (same label OR same ISO date)
+  // Build candidate list: same (normalized) ship AND (same label OR same ISO date)
   const candidates: ApifyCruise[] = cruises.filter((c) => {
-    const shipName = c.ship_name?.trim().toLowerCase();
-    const cruiseDate = c.cruise_date;
-    if (!shipName || !cruiseDate) return false;
-    if (shipName !== targetShip) return false;
+    if (!c.ship_name || !c.cruise_date) return false;
 
-    if (cruiseDate === targetLabel) return true;
+    const shipNorm = normalizeName(c.ship_name);
+    if (shipNorm !== targetShipNorm) return false;
 
-    const iso = apifyDateLabelToIso(cruiseDate);
+    if (c.cruise_date === targetLabel) return true;
+
+    const iso = apifyDateLabelToIso(c.cruise_date);
     return iso === targetIso;
   });
 
-  let cruise: ApifyCruise;
+  let cruise: ApifyCruise | null = null;
 
   if (candidates.length > 0) {
     // Choose the candidate with the most stops (most complete itinerary)
@@ -444,13 +444,9 @@ export async function getItineraryFromApify(
     });
   } else {
     console.warn(
-      "No exact itinerary match found for ship/date — falling back to first cruise for this ship (or first overall)."
+      "No exact itinerary match found for ship/date — falling back to first cruise in dataset."
     );
-    const firstForShip =
-      cruises.find(
-        (c) => c.ship_name?.trim().toLowerCase() === targetShip
-      ) ?? cruises[0];
-    cruise = firstForShip;
+    cruise = cruises[0];
   }
 
   console.log(
@@ -461,39 +457,40 @@ export async function getItineraryFromApify(
     countCruiseStops(cruise)
   );
 
+  const days: CruiseDay[] = [];
   const baseLabel = cruise.cruise_date; // e.g. "2025 Nov 30"
-  const rawDays: CruiseDay[] = [];
 
   // Start lastIso as the departure date if we can parse it, otherwise the requested sail date
   let lastIso = apifyDateLabelToIso(baseLabel) ?? params.sailDate;
 
-  // Build raw *port* days, then we will expand to every calendar day.
   for (let i = 1; i <= 20; i++) {
     const dateKey = `stop_${i}_date`;
     const textKey = `stop_${i}_text`;
+    const stopDate = cruise[dateKey];
+    const stopText = cruise[textKey];
 
-    const stopDateRaw = cruise[dateKey] as string | undefined;
-    let stopText = cruise[textKey] as string | undefined;
+    // We *must* have text, but date can be missing ("At sea" days etc.)
+    if (!stopText) continue;
 
-    // If Apify has a date but no text, treat as "Day at sea" (rare but safe).
-    if (!stopText && stopDateRaw) {
-      stopText = "Day at sea";
-    }
-
-    // Nothing here at all → skip this index
-    if (!stopText && !stopDateRaw) {
-      continue;
-    }
-
-    // Decide the ISO date
     let isoDate: string;
 
-    if (stopDateRaw && stopDateRaw.trim()) {
-      // Normal case: Apify gave us a date string like "09 Nov 16:00"
-      isoDate = parseStopDateToIso(stopDateRaw, baseLabel);
+    if (stopDate) {
+      // Normal case: parse the date from Apify
+      const yearMatch = baseLabel.match(/^(\d{4})/);
+      const year = yearMatch ? yearMatch[1] : "2025";
+
+      const m = String(stopDate).match(/(\d{1,2})\s+([A-Za-z]{3})/);
+      if (m) {
+        const [, dayStr, monthStr] = m;
+        const label = `${year} ${monthStr} ${dayStr.padStart(2, "0")}`;
+        isoDate = apifyDateLabelToIso(label) ?? lastIso;
+      } else {
+        isoDate = lastIso;
+      }
+
       lastIso = isoDate;
     } else {
-      // No explicit date; synthesize based on the previous day
+      // No date from Apify → synthesize based on previous stop
       if (lastIso) {
         isoDate = addDaysIso(lastIso, 1);
         lastIso = isoDate;
@@ -503,74 +500,36 @@ export async function getItineraryFromApify(
       }
     }
 
-    const portName = extractPortName(stopText ?? "");
+    const portName = extractPortName(stopText);
 
-    rawDays.push({
-      dayNumber: rawDays.length + 1,
+    days.push({
+      dayNumber: days.length + 1,
       date: isoDate,
       portName,
-      rawStopText: stopText ?? "",
+      rawStopText: stopText,
     });
   }
 
-  console.log("Mapped Apify cruise days (raw ports only):", rawDays);
+  console.log("Mapped Apify cruise days (raw):", days);
 
-  // --- Expand raw port days into *every* calendar day -------------
+  // Align itinerary to the selected sail date:
+  // drop any stops BEFORE params.sailDate, then re-number days.
+  const sailIso = params.sailDate; // "YYYY-MM-DD"
 
-  const validWithDates = rawDays.filter((d) => d.date);
-  if (!validWithDates.length) {
-    console.warn("No dated stops found; returning raw days.");
-    return rawDays;
-  }
+  const filtered = days.filter((d) => {
+    if (!d.date) return true;
+    // string compare works because it's ISO "YYYY-MM-DD"
+    return d.date >= sailIso;
+  });
 
-  const byDate = new Map<string, CruiseDay>();
-  for (const d of validWithDates) {
-    if (!d.date) continue;
-    if (!byDate.has(d.date)) {
-      byDate.set(d.date, d);
-    }
-  }
+  const normalized = (filtered.length ? filtered : days).map(
+    (d, index): CruiseDay => ({
+      ...d,
+      dayNumber: index + 1,
+    })
+  );
 
-  const sailIso = params.sailDate;
-  const portDates = Array.from(byDate.keys()).sort();
-  const lastPortDate = portDates[portDates.length - 1];
+  console.log("Mapped Apify cruise days (aligned to sail date):", normalized);
 
-  if (!lastPortDate || lastPortDate < sailIso) {
-    console.warn(
-      "Last port date is before sail date; returning raw days.",
-      sailIso,
-      lastPortDate
-    );
-    return rawDays;
-  }
-
-  const expanded: CruiseDay[] = [];
-  let currentIso = sailIso;
-  let dayIndex = 1;
-
-  while (currentIso <= lastPortDate) {
-    const base = byDate.get(currentIso);
-
-    if (base) {
-      expanded.push({
-        ...base,
-        dayNumber: dayIndex,
-        date: currentIso,
-      });
-    } else {
-      expanded.push({
-        dayNumber: dayIndex,
-        date: currentIso,
-        portName: "Day at sea",
-        rawStopText: "Day at sea",
-      });
-    }
-
-    dayIndex += 1;
-    currentIso = addDaysIso(currentIso, 1);
-  }
-
-  console.log("Expanded cruise days (ports + sea days):", expanded);
-
-  return expanded;
+  return normalized;
 }

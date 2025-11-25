@@ -1,14 +1,13 @@
-// src/components/SailingsCalendar.tsx
 import React, { useMemo, useState, useEffect } from "react";
 
 export type Sailing = {
   date: string; // "YYYY-MM-DD"
-  title: string; // e.g. "7 days, round-trip Western Caribbean..."
+  title: string;
 };
 
 type SailingsCalendarProps = {
   sailings: Sailing[];
-  selectedDate?: string; // "YYYY-MM-DD"
+  selectedDate?: string;
   onSelectDate: (date: string) => void;
 };
 
@@ -21,7 +20,7 @@ export default function SailingsCalendar({
   selectedDate,
   onSelectDate,
 }: SailingsCalendarProps) {
-  // Map dates → sailing(s)
+  // Map: date ISO -> sailings[] for that day
   const sailingByDate = useMemo(() => {
     const map = new Map<string, Sailing[]>();
     for (const s of sailings) {
@@ -32,57 +31,73 @@ export default function SailingsCalendar({
     return map;
   }, [sailings]);
 
-  // Which months actually have sailings
-  const monthsWithSailings = useMemo(() => {
+  // All months that have *any* sailing, as "YYYY-MM"
+  const monthKeys = useMemo(() => {
     const set = new Set<string>();
     for (const s of sailings) {
       const [y, m] = s.date.split("-");
-      set.add(`${y}-${m}`); // "2025-11"
+      set.add(`${y}-${m}`);
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort(); // ascending
   }, [sailings]);
 
-  // Current visible month
+  const minMonthKey = monthKeys[0];
+  const maxMonthKey = monthKeys[monthKeys.length - 1];
+
+  // Initial visible month: earliest sailing month or current month
   const [year, setYear] = useState<number>(() => {
-    if (monthsWithSailings.length) {
-      return parseInt(monthsWithSailings[0].slice(0, 4), 10);
+    if (sailings.length) {
+      const [y] = sailings[0].date.split("-");
+      return parseInt(y, 10);
     }
     return new Date().getFullYear();
   });
 
   const [month, setMonth] = useState<number>(() => {
-    if (monthsWithSailings.length) {
-      return parseInt(monthsWithSailings[0].slice(5, 7), 10) - 1;
+    if (sailings.length) {
+      const [, m] = sailings[0].date.split("-");
+      return parseInt(m, 10) - 1; // 0-based
     }
     return new Date().getMonth();
   });
 
-  // When sailings change (ship changes), reset month to first sailing
+  // If sailings list changes (e.g., different ship), reset to earliest month
   useEffect(() => {
-    if (!monthsWithSailings.length) return;
-    const [yStr, mStr] = monthsWithSailings[0].split("-");
-    setYear(parseInt(yStr, 10));
-    setMonth(parseInt(mStr, 10) - 1);
-  }, [monthsWithSailings]);
+    if (!sailings.length) return;
+    const [y, m] = sailings[0].date.split("-");
+    setYear(parseInt(y, 10));
+    setMonth(parseInt(m, 10) - 1);
+  }, [sailings]);
 
   const currentMonthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
-  const canGoPrev = monthsWithSailings.some((m) => m < currentMonthKey);
-  const canGoNext = monthsWithSailings.some((m) => m > currentMonthKey);
+  const canGoPrev = !!minMonthKey && currentMonthKey > minMonthKey;
+  const canGoNext = !!maxMonthKey && currentMonthKey < maxMonthKey;
 
   const goMonth = (direction: -1 | 1) => {
-    const sorted = monthsWithSailings;
-    const idx = sorted.findIndex((m) => m === currentMonthKey);
-    if (idx === -1) return;
-    const target = sorted[idx + direction];
-    if (!target) return;
-    const [yStr, mStr] = target.split("-");
-    setYear(parseInt(yStr, 10));
-    setMonth(parseInt(mStr, 10) - 1);
+    let newYear = year;
+    let newMonth = month + direction;
+
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    } else if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    }
+
+    const newKey = `${newYear}-${String(newMonth + 1).padStart(2, "0")}`;
+
+    // Clamp so we don't move past the range of actual sailings
+    if (direction === -1 && minMonthKey && newKey < minMonthKey) return;
+    if (direction === 1 && maxMonthKey && newKey > maxMonthKey) return;
+
+    setYear(newYear);
+    setMonth(newMonth);
   };
 
-  // Build calendar grid
+  // Build calendar grid for visible month
   const firstOfMonth = new Date(year, month, 1);
-  const firstDayOfWeek = firstOfMonth.getDay(); // 0=Sun
+  const firstDayOfWeek = firstOfMonth.getDay(); // 0 = Sun
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const weeks: Array<Array<Date | null>> = [];
@@ -113,7 +128,7 @@ export default function SailingsCalendar({
         marginTop: "10px",
         borderRadius: "10px",
         border: "1px solid rgba(148,163,184,0.4)",
-        padding: "10px 12px 8px",
+        padding: "10px 12px",
         background: "#f9fafb",
       }}
     >
@@ -260,8 +275,8 @@ export default function SailingsCalendar({
                       width: "4px",
                       height: "4px",
                       borderRadius: "999px",
-                      background: "#1d4ed8",
                       marginTop: "2px",
+                      background: "#1d4ed8",
                     }}
                   />
                 )}
@@ -269,18 +284,6 @@ export default function SailingsCalendar({
             );
           })
         )}
-      </div>
-
-      {/* Tiny helper text only (no "Selected sailing" list) */}
-      <div
-        style={{
-          marginTop: "6px",
-          fontSize: "10px",
-          color: "#6b7280",
-          fontStyle: "italic",
-        }}
-      >
-        Click a highlighted date to load matching cruises below.
       </div>
     </div>
   );

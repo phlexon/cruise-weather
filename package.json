@@ -3,16 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
-  "dev": "vite",
-  "build:css": "npx @tailwindcss/cli -i ./tailwind.css -o ./src/output.css",
-  "build": "npm run build:css && vite build",
-  "preview": "vite preview",
-  "tw": "npx @tailwindcss/cli -i ./tailwind.css -o ./src/output.css --watch"
-},
+  "scripts": {
+    "dev": "vite",
+    "build:css": "npx @tailwindcss/cli -i ./tailwind.css -o ./src/output.css",
+    "build": "npm run build:css && vite build",
+    "preview": "vite preview",
+    "tw": "npx @tailwindcss/cli -i ./tailwind.css -o ./src/output.css --watch"
+  },
   "dependencies": {
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-loading-skeleton": "^3.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
