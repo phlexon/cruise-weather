@@ -10,7 +10,7 @@ type TimelineDay = {
   rainChance?: number;
   icon?: "sunny" | "partly" | "cloudy" | "rain";
   description?: string;
-  // marks where the data came from
+  // where the data came from
   source?: "forecast" | "climatology";
 };
 
@@ -21,6 +21,7 @@ type WeatherTimelineProps = {
 // Avoid timezone shift by forcing a local-time date
 function formatDisplayDate(iso?: string): string {
   if (!iso) return "";
+  // Treat as local noon on that calendar date
   const d = new Date(iso + "T12:00:00");
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(undefined, {
@@ -50,20 +51,23 @@ function getCardBackground(day: TimelineDay): string {
     typeof day.low === "number" ||
     typeof day.rainChance === "number";
 
-  // Climatology days: soft indigo tint
+  // Climatology: cool indigo tint
   if (day.source === "climatology") {
-    return "#eef2ff";
+    return "#eef2ff"; // light indigo
   }
 
   if (!hasWeather) {
-    return "#f3f4f6"; // light gray when nothing
+    // light gray when no weather data
+    return "#f3f4f6";
   }
 
   if (day.icon === "rain") {
-    return "#e0f2fe"; // cooler blue for rainy days
+    // slightly cooler for rainy days
+    return "#e0f2fe";
   }
 
-  return "#fff7ed"; // warm peach for normal days
+  // warm, sunny background for normal days
+  return "#fff7ed";
 }
 
 export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
@@ -71,25 +75,21 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
     return <p style={{ fontSize: "12px" }}>No itinerary available.</p>;
   }
 
-  const embarkationCity = itinerary[0]?.location.split(",")[0] ?? "departure port";
-
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         gap: "10px",
-        maxHeight: "420px",
-        overflowY: "auto",
+        // NOTE: no maxHeight / overflow here anymore – it will grow with the page
       }}
     >
       {/* Header row */}
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: "12px",
+          flexDirection: "column",
+          gap: "2px",
           fontSize: "11px",
           textTransform: "uppercase",
           letterSpacing: "0.08em",
@@ -97,22 +97,23 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
           marginBottom: "4px",
         }}
       >
-        <div>
-          <div>Daily itinerary &amp; weather</div>
-          <div
-            style={{
-              fontSize: "9px",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              marginTop: "2px",
-            }}
-          >
-            Live forecast shown when available · 30-year averages fill missing days
-          </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "8px",
+          }}
+        >
+          <span>Daily itinerary &amp; weather</span>
+          <span style={{ textAlign: "right" }}>
+            Weather uses forecast (and historical climate normals when forecast
+            isn&apos;t available) for{" "}
+            {itinerary[0]?.location.split(",")[0] ?? "departure port"}.
+          </span>
         </div>
-
-        <div style={{ textAlign: "right" }}>
-          <div>Forecast + climate normals for {embarkationCity}.</div>
+        <div style={{ fontSize: "9px", letterSpacing: "0.12em" }}>
+          LIVE FORECAST SHOWN WHEN AVAILABLE · 30-YEAR AVERAGES FILL MISSING
+          DAYS
         </div>
       </div>
 
@@ -131,7 +132,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
               border: "1px solid rgba(249,115,22,0.35)",
             }}
           >
-            {/* Day + date row */}
+            {/* Day + date */}
             <div
               style={{
                 fontSize: "11px",
@@ -141,37 +142,10 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                 marginBottom: "4px",
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
               }}
             >
               <span>Day {day.day}</span>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {isClimo && (
-                  <span
-                    style={{
-                      fontSize: "9px",
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      padding: "2px 8px",
-                      borderRadius: "999px",
-                      border: "1px solid #4f46e5",
-                      background: "#e0e7ff",
-                      color: "#3730a3",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    30-year average (not a forecast)
-                  </span>
-                )}
-                <span>{dateLabel}</span>
-              </div>
+              <span>{dateLabel}</span>
             </div>
 
             {/* Location */}
@@ -179,12 +153,29 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                marginBottom: "2px",
+                marginBottom: isClimo ? "0px" : "2px",
                 color: "#111827",
               }}
             >
               {day.location}
             </div>
+
+            {/* Small badge for climatology days */}
+            {isClimo && (
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#4F46E5",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  marginTop: "4px",
+                  marginBottom: "4px",
+                }}
+              >
+                30-YEAR AVERAGE (NOT A FORECAST)
+              </div>
+            )}
 
             {/* Weather row */}
             <div
@@ -210,7 +201,8 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                   typeof day.low === "number" && (
                     <div>
                       <strong>
-                        High {Math.round(day.high)}° • Low {Math.round(day.low)}°
+                        High {Math.round(day.high)}° • Low{" "}
+                        {Math.round(day.low)}°
                       </strong>
                     </div>
                   )}
@@ -225,7 +217,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                       marginTop: "2px",
                       fontSize: "11px",
                       fontStyle: isClimo ? "italic" : "normal",
-                      color: isClimo ? "#4b5563" : "#374151",
+                      color: isClimo ? "#4B5563" : "#374151",
                     }}
                   >
                     {day.description}
@@ -236,13 +228,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                   !day.high &&
                   !day.low &&
                   !day.rainChance && (
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        fontStyle: "italic",
-                        color: "#6b7280",
-                      }}
-                    >
+                    <div style={{ fontSize: "11px", fontStyle: "italic" }}>
                       No forecast available for this day yet – check closer to
                       your sail date.
                     </div>
