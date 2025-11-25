@@ -5,9 +5,9 @@ type TimelineDay = {
   day: number;
   date?: string;
   location: string;
-  high?: number;
-  low?: number;
-  rainChance?: number;
+  high?: number | string;
+  low?: number | string;
+  rainChance?: number | string;
   icon?: "sunny" | "partly" | "cloudy" | "rain";
   description?: string;
   source?: "forecast" | "climatology";
@@ -49,7 +49,6 @@ type WeatherTheme = {
 };
 
 function getThemeForDay(day: TimelineDay): WeatherTheme {
-  // 1) Base theme from icon
   let theme: WeatherTheme;
 
   switch (day.icon) {
@@ -59,28 +58,24 @@ function getThemeForDay(day: TimelineDay): WeatherTheme {
         shadow: "0 20px 40px rgba(15, 118, 178, 0.5)",
       };
       break;
-
     case "partly":
       theme = {
-        background: "linear-gradient(135deg, #f59e0b, #fbbf24)", // warm orange
+        background: "linear-gradient(135deg, #f59e0b, #fbbf24)",
         shadow: "0 20px 40px rgba(245,158,11,0.5)",
       };
       break;
-
     case "cloudy":
       theme = {
         background: "linear-gradient(135deg, #64748b, #0f172a)",
         shadow: "0 20px 40px rgba(15, 23, 42, 0.55)",
       };
       break;
-
     case "rain":
       theme = {
         background: "linear-gradient(135deg, #0f172a, #1d4ed8)",
         shadow: "0 20px 40px rgba(30, 64, 175, 0.6)",
       };
       break;
-
     default:
       theme = {
         background: "linear-gradient(135deg, #0ea5e9, #2563eb)",
@@ -89,7 +84,6 @@ function getThemeForDay(day: TimelineDay): WeatherTheme {
       break;
   }
 
-  // 2) Climatology days: soften the shadow a bit
   if (day.source === "climatology") {
     return {
       background: theme.background,
@@ -130,12 +124,30 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
   const dateLabel = formatDisplayDate(day.date);
   const isClimo = day.source === "climatology";
 
-  const mainTemp =
-    typeof day.high === "number"
-      ? day.high
-      : typeof day.low === "number"
-      ? day.low
-      : undefined;
+  // 🔧 Normalize values to numbers so strings like "82" still work
+  const rawHigh = day.high;
+  const rawLow = day.low;
+  const rawRain = day.rainChance;
+
+  const highVal =
+    rawHigh === undefined || rawHigh === null
+      ? undefined
+      : Number(rawHigh);
+  const lowVal =
+    rawLow === undefined || rawLow === null
+      ? undefined
+      : Number(rawLow);
+  const rainVal =
+    rawRain === undefined || rawRain === null
+      ? undefined
+      : Number(rawRain);
+
+  const hasHigh = typeof highVal === "number" && !Number.isNaN(highVal);
+  const hasLow = typeof lowVal === "number" && !Number.isNaN(lowVal);
+  const hasRain =
+    typeof rainVal === "number" && !Number.isNaN(rainVal);
+
+  const mainTemp = hasHigh ? highVal : hasLow ? lowVal : undefined;
 
   const baseStyle: React.CSSProperties = {
     borderRadius: "24px",
@@ -197,7 +209,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
         <span>{dateLabel}</span>
       </div>
 
-      {/* Location (fixed-height so cards line up) */}
+      {/* Location */}
       <div
         style={{
           fontSize: "14px",
@@ -251,8 +263,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
           gap: "4px",
         }}
       >
-        {/* Big, bright temp – very visible on mobile */}
-        {typeof mainTemp === "number" ? (
+        {typeof mainTemp === "number" && !Number.isNaN(mainTemp) ? (
           <div
             style={{
               fontSize: "32px",
@@ -275,7 +286,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
           </div>
         )}
 
-        {(typeof day.high === "number" || typeof day.low === "number") && (
+        {(hasHigh || hasLow) && (
           <div
             style={{
               fontSize: "11px",
@@ -283,16 +294,13 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
               color: "rgba(241,245,249,0.95)",
             }}
           >
-            {typeof day.high === "number" &&
-              `High ${Math.round(day.high)}°`}
-            {typeof day.high === "number" && typeof day.low === "number"
-              ? " · "
-              : ""}
-            {typeof day.low === "number" && `Low ${Math.round(day.low)}°`}
+            {hasHigh && `High ${Math.round(highVal!)}°`}
+            {hasHigh && hasLow ? " · " : ""}
+            {hasLow && `Low ${Math.round(lowVal!)}°`}
           </div>
         )}
 
-        {typeof day.rainChance === "number" && (
+        {hasRain && (
           <div
             style={{
               fontSize: "10px",
@@ -301,7 +309,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
               marginTop: "2px",
             }}
           >
-            Chance of rain: {Math.round(day.rainChance)}%
+            Chance of rain: {Math.round(rainVal!)}%
           </div>
         )}
       </div>
@@ -331,7 +339,6 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
   const embarkationCity =
     itinerary[0]?.location.split(",")[0] ?? "departure port";
 
-  // Desktop pagination (3 cards at a time)
   const CARDS_PER_PAGE = 3;
   const [page, setPage] = useState(0);
   const totalPages = useMemo(
@@ -352,7 +359,6 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
     return itinerary.slice(start, start + CARDS_PER_PAGE);
   }, [isMobile, itinerary, page]);
 
-  // Arrow click animation state
   const [prevPressed, setPrevPressed] = useState(false);
   const [nextPressed, setNextPressed] = useState(false);
 
@@ -364,9 +370,8 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
         gap: "8px",
       }}
     >
-      {/* MAIN TIMELINE */}
       {isMobile ? (
-        // Mobile: horizontal scroll, NO gradients
+        // Mobile: horizontal scroll, no gradients
         <div
           style={{
             margin: "0 -6px",
@@ -441,7 +446,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
               flex: 1,
               display: "flex",
               gap: "12px",
-              paddingBottom: "25px", // extra room for shadows
+              paddingBottom: "25px",
             }}
           >
             {desktopSlice.map((day) => (
