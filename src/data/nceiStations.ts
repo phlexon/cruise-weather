@@ -1,24 +1,12 @@
-// src/data/nceiStations.ts
-
 export function getNceiStationForCity(city: string): string | null {
   if (!city) return null;
 
-  // Normalize input
-  let key = city.trim().toLowerCase();
-
-  // Strip country names, states, etc.
-  key = key
-    .replace(/,?\s*united states/i, "")
-    .replace(/,?\s*usa/i, "")
-    .replace(/,?\s*us$/i, "")
-    .replace(/,?\s*canada/i, "")
-    .replace(/,?\s*ca$/i, "")
+  const key = city
+    .trim()
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "")   // removes "(Embarkation)" safely
     .trim();
 
-  // Optional: remove anything after commas
-  key = key.split(",")[0].trim();
-
-  // Lookup table
   const map: Record<string, string> = {
     "miami": "USW00012839",
     "fort lauderdale": "USW00012849",
