@@ -183,6 +183,9 @@
   .visible {
     visibility: visible;
   }
+  .relative {
+    position: relative;
+  }
   .mt-1 {
     margin-top: calc(var(--spacing) * 1);
   }

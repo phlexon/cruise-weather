@@ -36,8 +36,21 @@ type NceiMonthlyNormalRow = {
 const nceiNormalsCache: Record<string, NceiMonthlyNormalRow[]> = {};
 
 // Base URL for proxy (same origin by default, but we normalize & allow empty)
-const RAW_NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
-const NCEI_PROXY_BASE = RAW_NCEI_PROXY_BASE.replace(/\/+$/, "");
+const NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
+
+/**
+ * Build the URL for the NCEI proxy.
+ * - If NCEI_PROXY_BASE is set, we use it as the origin.
+ * - If it's empty, we fall back to a relative path: "/api/ncei-normals?...".
+ */
+function buildNceiProxyUrl(stationId: string): string {
+  const base = NCEI_PROXY_BASE || ""; // if empty, use relative path
+  const trimmed = base.endsWith("/") ? base.slice(0, -1) : base;
+
+  return `${trimmed}/api/ncei-normals?stationId=${encodeURIComponent(
+    stationId
+  )}`;
+}
 
 // --- Helpers -------------------------------------------------------
 
@@ -64,22 +77,12 @@ function mapTomorrowCodeToIcon(code: number): WeatherIcon {
 async function getNceiMonthlyNormalsForStation(
   stationId: string
 ): Promise<NceiMonthlyNormalRow[]> {
-  // If no proxy base is configured, just skip climatology gracefully.
-  if (!NCEI_PROXY_BASE) {
-    console.warn(
-      "[NCEI] VITE_NCEI_PROXY_BASE_URL is not set; skipping climatology for station",
-      stationId
-    );
-    return [];
-  }
-
+  // Use cache if we already fetched this station
   if (nceiNormalsCache[stationId]) {
     return nceiNormalsCache[stationId];
   }
 
-  const url = `${NCEI_PROXY_BASE}/api/ncei-normals?stationId=${encodeURIComponent(
-    stationId
-  )}`;
+  const url = buildNceiProxyUrl(stationId);
 
   let res: Response;
   let text: string;
