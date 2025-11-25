@@ -116,183 +116,231 @@ export default function App() {
   };
 
   // ---------- LOAD DETAILS FOR A SPECIFIC CRUISE ----------
-  const loadCruiseDetails = async (cruise: CruiseSummary) => {
-    setSelectedCruise(cruise);
-    setLoadingDetails(true);
-    setDetailsError(null);
-    setHasWeather(false);
+  // ---------- LOAD DETAILS FOR A SPECIFIC CRUISE ----------
+const loadCruiseDetails = async (cruise: CruiseSummary) => {
+  setSelectedCruise(cruise);
+  setLoadingDetails(true);
+  setDetailsError(null);
+  setHasWeather(false);
 
-    try {
-      // 1) Load itinerary from Apify
-      const cruiseDays: CruiseDay[] = await getItineraryFromApify({
-        shipName: cruise.shipName,
-        sailDate: cruise.departIso,
-      });
+  try {
+    // 1) Load itinerary from Apify
+    const cruiseDays: CruiseDay[] = await getItineraryFromApify({
+      shipName: cruise.shipName,
+      sailDate: cruise.departIso,
+    });
 
-      let daysToUse = cruiseDays;
+    let daysToUse = cruiseDays;
 
-      if (!daysToUse || daysToUse.length === 0) {
-        console.warn("No Apify itinerary found — using sampleItinerary");
-        daysToUse = (sampleItinerary as any[]).map(
-          (d: any, idx: number): CruiseDay => ({
-            dayNumber: idx + 1,
-            date: d.date,
-            portName:
-              d.location?.replace("(Embarkation)", "").trim() ?? d.location,
-            rawStopText: d.location,
-          })
-        );
+    if (!daysToUse || daysToUse.length === 0) {
+      console.warn("No Apify itinerary found — using sampleItinerary");
+      daysToUse = (sampleItinerary as any[]).map(
+        (d: any, idx: number): CruiseDay => ({
+          dayNumber: idx + 1,
+          date: d.date,
+          portName:
+            d.location?.replace("(Embarkation)", "").trim() ?? d.location,
+          rawStopText: d.location,
+        })
+      );
+    }
+
+    // Helper to normalize port/sea-day labels
+    const getLocationLabel = (day: CruiseDay, idx: number): string => {
+      const raw = (day as any).rawStopText ?? "";
+      const portName = (day as any).portName?.trim?.() ?? "";
+
+      const text = `${portName} ${raw}`.toLowerCase();
+
+      // Treat anything that looks like "at sea" / "sea day" as a sea day
+      if (text.includes("at sea") || text.includes("sea day")) {
+        return "At sea";
       }
 
-      // Helper to normalize port/sea-day labels
-      const getLocationLabel = (day: CruiseDay, idx: number): string => {
-        const raw = (day as any).rawStopText ?? "";
-        const portName = (day as any).portName?.trim?.() ?? "";
+      // If port name is empty but we have some raw text, use that
+      if (!portName && raw) {
+        return raw;
+      }
 
-        const text = `${portName} ${raw}`.toLowerCase();
+      // Fallback to portName or a generic label
+      return portName || `Day ${idx + 1}`;
+    };
 
-        // Treat anything that looks like "at sea" / "sea day" as a sea day
-        if (text.includes("at sea") || text.includes("sea day")) {
-          return "At sea";
-        }
+    // 2) Basic mapping used by the UI (location + day index)
+    let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
+      day: idx + 1,
+      date: day.date, // will be overwritten with aligned date below
+      location: getLocationLabel(day, idx),
+      icon: "sunny",
+      description: "Loading weather…",
+    }));
 
-        // If port name is empty but we have some raw text, use that
-        if (!portName && raw) {
-          return raw;
-        }
+    // --- ALIGN DATES TO THE USER-SELECTED SAIL DATE ---
+    const sailIso = currentSailDate ?? cruise.departIso; // "YYYY-MM-DD"
+    const sailDateObj = new Date(sailIso + "T00:00:00Z");
 
-        // Fallback to portName or a generic label
-        return portName || `Day ${idx + 1}`;
+    const isoDates = mapped.map((_, idx) => {
+      const d = new Date(sailDateObj);
+      d.setDate(d.getDate() + idx); // Day 1 = sail date, Day 2 = +1, etc.
+      return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+    });
+
+    // 3) Enrich with Tomorrow.io + NCEI climatology fallback
+    try {
+      // Use *real* port from Apify as city, NOT "At sea"
+      const firstDay = daysToUse[0] as any;
+      const rawPort =
+        firstDay?.portName ||
+        firstDay?.rawStopText ||
+        mapped[0]?.location ||
+        "Miami";
+
+      const cleanedRawPort =
+        typeof rawPort === "string"
+          ? rawPort.replace("(Embarkation)", "").trim()
+          : "Miami";
+
+      // Take just the city portion (before first comma)
+      let embarkationCity = cleanedRawPort.split(",")[0].trim();
+      if (!embarkationCity) embarkationCity = "Miami";
+
+      const stationId = getNceiStationForCity(embarkationCity) ?? undefined;
+
+      console.log("[Weather] Using city/station:", {
+        embarkationCity,
+        stationId,
+      });
+
+      const forecastsByDate = await getDailyForecastsForCity(
+        embarkationCity,
+        isoDates,
+        { nceiStationId: stationId }
+      );
+
+      const forecastKeys = Object.keys(forecastsByDate);
+      console.log("[Weather] isoDates:", isoDates);
+      console.log("[Weather] forecast keys:", forecastKeys);
+
+      // Helper: parse "YYYY-MM-DD" safely
+      const parseIso = (iso?: string) => {
+        if (!iso) return null;
+        const d = new Date(iso + "T00:00:00Z");
+        return isNaN(d.getTime()) ? null : d;
       };
 
-      // 2) Basic mapping used by the UI (location + day index)
-      let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
-        day: idx + 1,
-        date: day.date, // will be overwritten with aligned date below
-        location: getLocationLabel(day, idx),
-        icon: "sunny",
-        description: "Loading weather…",
-      }));
+      // Pre-sort forecasts so we can also fall back by index
+      const forecastEntries = Object.entries(forecastsByDate).sort((a, b) =>
+        a[0].localeCompare(b[0])
+      );
 
-      // --- ALIGN DATES TO THE USER-SELECTED SAIL DATE ---
-      // If we have the user's sail date, treat that as canonical; otherwise fall back to Apify's.
-      const sailIso = currentSailDate ?? cruise.departIso; // "YYYY-MM-DD"
-      const sailDateObj = new Date(sailIso + "T00:00:00Z");
+      // Helper: if exact date missing, find a forecast within ±1 day
+      const findNearbyForecast = (dateKey?: string): any | undefined => {
+        if (!dateKey) return undefined;
+        const target = parseIso(dateKey);
+        if (!target) return undefined;
 
-      const isoDates = mapped.map((_, idx) => {
-        const d = new Date(sailDateObj);
-        d.setDate(d.getDate() + idx); // Day 1 = sail date, Day 2 = +1, etc.
-        return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
-      });
+        const targetTime = target.getTime();
+        const oneDayMs = 24 * 60 * 60 * 1000;
 
-      // 3) Enrich with Tomorrow.io + NCEI climatology fallback
-      try {
-        // IMPORTANT: use the *real* port from Apify for the city, not the
-        // label ("At sea", etc.)
-        const firstDay = daysToUse[0] as any;
-        const rawPort =
-          firstDay?.portName ||
-          firstDay?.rawStopText ||
-          mapped[0]?.location ||
-          "Miami";
+        let best: any | undefined = undefined;
+        let bestDiff = Infinity;
 
-        const cleanedRawPort =
-          typeof rawPort === "string"
-            ? rawPort.replace("(Embarkation)", "").trim()
-            : "Miami";
+        for (const [k, v] of forecastEntries) {
+          const d = parseIso(k);
+          if (!d) continue;
+          const diff = Math.abs(d.getTime() - targetTime);
+          if (diff <= oneDayMs && diff < bestDiff) {
+            bestDiff = diff;
+            best = v;
+          }
+        }
 
-        // Take just the city portion (before the first comma)
-        let embarkationCity = cleanedRawPort.split(",")[0].trim();
-        if (!embarkationCity) embarkationCity = "Miami";
+        return best;
+      };
 
-        const stationId = getNceiStationForCity(embarkationCity) ?? undefined;
+      let anyWeather = false;
 
-        console.log("[Weather] Using city/station:", {
-          embarkationCity,
-          stationId,
-        });
+      mapped = mapped.map((day, idx) => {
+        const dateKey = isoDates[idx];
 
-        const forecastsByDate = await getDailyForecastsForCity(
-          embarkationCity,
-          isoDates,
-          { nceiStationId: stationId }
+        // Try: exact date → same index → ±1 day
+        let forecast: any =
+          (dateKey && forecastsByDate[dateKey]) ||
+          forecastEntries[idx]?.[1] ||
+          findNearbyForecast(dateKey);
+
+        console.log(
+          `[Weather-map] Day ${idx + 1} (${dateKey}) →`,
+          forecast ? "got forecast" : "no forecast"
         );
 
-        console.log("[Weather] Forecasts by date:", forecastsByDate);
+        const baseDay: ItineraryDay = {
+          ...day,
+          date: dateKey,
+        };
 
-        let anyWeather = false;
-
-        mapped = mapped.map((day, idx) => {
-          const dateKey = isoDates[idx];
-          const forecast = forecastsByDate[dateKey];
-
-          // Always use aligned date for display
-          const baseDay: ItineraryDay = {
-            ...day,
-            date: dateKey,
-          };
-
-          if (!forecast) {
-            return {
-              ...baseDay,
-              description:
-                baseDay.description === "Loading weather…"
-                  ? "Weather not available for this day yet."
-                  : baseDay.description,
-            };
-          }
-
-          anyWeather = true;
-
+        if (!forecast) {
           return {
             ...baseDay,
-            high: forecast.high,
-            low: forecast.low,
-            rainChance: forecast.rainChance,
-            icon: forecast.icon,
-            description: forecast.description,
-            source: forecast.source,
+            description:
+              baseDay.description === "Loading weather…"
+                ? "Weather not available for this day yet."
+                : baseDay.description,
           };
-        });
+        }
 
-        setHasWeather(anyWeather);
-      } catch (weatherErr: any) {
-        console.error("Weather provider failed, itinerary only:", weatherErr);
+        anyWeather = true;
 
-        const msg =
-          (weatherErr &&
-            (weatherErr.message ||
-              weatherErr.toString?.() ||
-              JSON.stringify(weatherErr))) ||
-          "Unknown error (null error object)";
+        return {
+          ...baseDay,
+          high: forecast.high,
+          low: forecast.low,
+          rainChance: forecast.rainChance,
+          icon: forecast.icon,
+          description: forecast.description,
+          source: forecast.source,
+        };
+      });
 
-        setDetailsError(
-          "Weather data is temporarily unavailable. " + String(msg)
-        );
+      setHasWeather(anyWeather);
+    } catch (weatherErr: any) {
+      console.error("Weather provider failed, itinerary only:", weatherErr);
 
-        setHasWeather(false);
+      const msg =
+        (weatherErr &&
+          (weatherErr.message ||
+            weatherErr.toString?.() ||
+            JSON.stringify(weatherErr))) ||
+        "Unknown error (null error object)";
 
-        // even if weather fails, still align dates to sail date
-        mapped = mapped.map((day, idx) => ({
-          ...day,
-          date: isoDates[idx],
-          description:
-            day.description === "Loading weather…"
-              ? "Weather not available right now."
-              : day.description,
-        }));
-      }
+      setDetailsError(
+        "Weather data is temporarily unavailable. " + String(msg)
+      );
 
-      setItinerary(mapped);
-    } catch (e) {
-      console.error("Error loading cruise itinerary:", e);
-      setDetailsError("There was a problem loading the cruise itinerary.");
-      setItinerary(sampleItinerary as unknown as ItineraryDay[]);
       setHasWeather(false);
-    } finally {
-      setLoadingDetails(false);
+
+      // even if weather fails, still align dates to sail date
+      mapped = mapped.map((day, idx) => ({
+        ...day,
+        date: isoDates[idx],
+        description:
+          day.description === "Loading weather…"
+            ? "Weather not available right now."
+            : day.description,
+      }));
     }
-  };
+
+    setItinerary(mapped);
+  } catch (e) {
+    console.error("Error loading cruise itinerary:", e);
+    setDetailsError("There was a problem loading the cruise itinerary.");
+    setItinerary(sampleItinerary as unknown as ItineraryDay[]);
+    setHasWeather(false);
+  } finally {
+    setLoadingDetails(false);
+  }
+};
+
 
   // ---------- CARD CLICK ----------
   const handleResultClick = async (index: number) => {
