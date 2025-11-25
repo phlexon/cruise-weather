@@ -11,11 +11,11 @@ interface CruiseResultsProps {
 const CruiseResults: React.FC<CruiseResultsProps> = ({
   results,
   onSelect,
-  selectedIndex
+  selectedIndex,
 }) => {
   if (!results.length) {
     return (
-      <p className="mt-4 text-center text-sm text-slate-700">
+      <p className="mt-4 text-center text-sm text-slate-600">
         No cruises found for that date.
       </p>
     );
@@ -43,19 +43,20 @@ const CruiseResults: React.FC<CruiseResultsProps> = ({
               "shadow-sm hover:-translate-y-0.5 hover:shadow-md",
               isSelected
                 ? "border-2 border-blue-600 bg-white"
-                : "border border-slate-200 bg-white"
+                : "border border-slate-200 bg-white",
             ].join(" ")}
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-xs text-slate-500">
-                  7 days, round-trip cruise
+                {/* 👇 label no longer hard-codes the number of days */}
+                <p className="text-[11px] text-slate-500 tracking-wide uppercase">
+                  Round-trip cruise
                 </p>
                 <h3 className="text-sm font-semibold text-slate-900">
                   {cruise.title || "Cruise itinerary"}
                 </h3>
                 <p className="mt-1 text-xs text-slate-600">
-                  • {cruise.shipName} ({cruise.cruiseLine})
+                  {cruise.shipName} · {cruise.cruiseLine}
                 </p>
               </div>
 
@@ -75,10 +76,10 @@ const CruiseResults: React.FC<CruiseResultsProps> = ({
             </div>
 
             <div className="mt-2 flex items-center justify-between text-[11px]">
-              <span className="font-medium text-blue-700">
+              <span className="font-medium text-blue-700 tracking-wide">
                 View itinerary →
               </span>
-              <span className="text-slate-500">TBA</span>
+              <span className="text-slate-500 lowercase">details</span>
             </div>
           </div>
         );

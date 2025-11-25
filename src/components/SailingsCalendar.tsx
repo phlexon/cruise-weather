@@ -1,3 +1,4 @@
+// src/components/SailingsCalendar.tsx
 import React, { useMemo, useState, useEffect } from "react";
 
 export type Sailing = {
@@ -122,14 +123,20 @@ export default function SailingsCalendar({
 
   const selectedKey = selectedDate ?? "";
 
+  // Arrow press animation state
+  const [prevPressed, setPrevPressed] = useState(false);
+  const [nextPressed, setNextPressed] = useState(false);
+
   return (
     <div
       style={{
         marginTop: "10px",
-        borderRadius: "10px",
-        border: "1px solid rgba(148,163,184,0.4)",
-        padding: "10px 12px",
-        background: "#f9fafb",
+        borderRadius: "16px",
+        border: "1px solid rgba(148,163,184,0.35)",
+        padding: "12px 14px 14px",
+        background:
+          "linear-gradient(135deg, rgba(248,250,252,0.98), rgba(239,246,255,0.98))",
+        boxShadow: "0 16px 40px rgba(15,23,42,0.12)",
       }}
     >
       {/* Header + navigation */}
@@ -138,58 +145,123 @@ export default function SailingsCalendar({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "8px",
+          marginBottom: "10px",
+          gap: "8px",
         }}
       >
-        <div
-          style={{
-            fontSize: "12px",
-            fontWeight: 600,
-            color: "#111827",
-          }}
-        >
-          Available sailings calendar
+        <div>
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#0f172a",
+            }}
+          >
+            Available sailings
+          </div>
+          <div
+            style={{
+              fontSize: "10px",
+              color: "#6b7280",
+              marginTop: "2px",
+            }}
+          >
+            Tap a highlighted date to auto-run your search.
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
+        >
           <button
             type="button"
             onClick={() => goMonth(-1)}
+            onMouseDown={() => canGoPrev && setPrevPressed(true)}
+            onMouseUp={() => setPrevPressed(false)}
+            onMouseLeave={() => setPrevPressed(false)}
             disabled={!canGoPrev}
             style={{
-              fontSize: "11px",
-              padding: "2px 6px",
+              width: "28px",
+              height: "28px",
               borderRadius: "999px",
               border: "1px solid rgba(148,163,184,0.7)",
               background: canGoPrev ? "white" : "#e5e7eb",
               cursor: canGoPrev ? "pointer" : "default",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: prevPressed ? "scale(0.9)" : "scale(1)",
+              transition:
+                "transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease",
+              boxShadow: prevPressed
+                ? "0 4px 10px rgba(15,23,42,0.18)"
+                : "none",
             }}
           >
-            ◀
+            <img
+              src="/icons/arrow.svg"
+              alt="Previous month"
+              style={{
+                width: "14px",
+                height: "14px",
+                transform: "rotate(180deg)",
+                opacity: canGoPrev ? 1 : 0.65,
+              }}
+            />
           </button>
-          <span
+
+          <div
             style={{
               fontSize: "11px",
-              fontWeight: 500,
-              color: "#374151",
+              fontWeight: 600,
+              color: "#111827",
+              padding: "4px 8px",
+              borderRadius: "999px",
+              background: "rgba(255,255,255,0.9)",
+              border: "1px solid rgba(209,213,219,0.8)",
             }}
           >
             {monthLabel}
-          </span>
+          </div>
+
           <button
             type="button"
             onClick={() => goMonth(1)}
+            onMouseDown={() => canGoNext && setNextPressed(true)}
+            onMouseUp={() => setNextPressed(false)}
+            onMouseLeave={() => setNextPressed(false)}
             disabled={!canGoNext}
             style={{
-              fontSize: "11px",
-              padding: "2px 6px",
+              width: "28px",
+              height: "28px",
               borderRadius: "999px",
               border: "1px solid rgba(148,163,184,0.7)",
               background: canGoNext ? "white" : "#e5e7eb",
               cursor: canGoNext ? "pointer" : "default",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: nextPressed ? "scale(0.9)" : "scale(1)",
+              transition:
+                "transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease",
+              boxShadow: nextPressed
+                ? "0 4px 10px rgba(15,23,42,0.18)"
+                : "none",
             }}
           >
-            ▶
+            <img
+              src="/icons/arrow.svg"
+              alt="Next month"
+              style={{
+                width: "14px",
+                height: "14px",
+                opacity: canGoNext ? 1 : 0.65,
+              }}
+            />
           </button>
         </div>
       </div>
@@ -218,7 +290,7 @@ export default function SailingsCalendar({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          gap: "2px",
+          gap: "3px",
           fontSize: "11px",
         }}
       >
@@ -234,13 +306,31 @@ export default function SailingsCalendar({
             const isSelected = selectedKey === key;
 
             const baseBg = hasSailing ? "#eff6ff" : "transparent";
-            const bg = isSelected ? "#2563eb" : baseBg;
-            const color = isSelected ? "white" : hasSailing ? "#1d4ed8" : "#374151";
-            const border = isSelected
-              ? "1px solid #1d4ed8"
+            const bg = isSelected ? "linear-gradient(135deg,#2563eb,#0ea5e9)" : baseBg;
+
+            const color = isSelected
+              ? "white"
               : hasSailing
-              ? "1px solid rgba(37,99,235,0.5)"
+              ? "#1d4ed8"
+              : "#6b7280";
+
+            const border = isSelected
+              ? "1px solid rgba(37,99,235,0.9)"
+              : hasSailing
+              ? "1px solid rgba(191,219,254,1)"
               : "1px solid transparent";
+
+            const boxShadow = isSelected
+              ? "0 6px 12px rgba(37,99,235,0.35)"
+              : hasSailing
+              ? "0 3px 8px rgba(148,163,184,0.22)"
+              : "none";
+
+            const today = new Date();
+            const isToday =
+              date.getFullYear() === today.getFullYear() &&
+              date.getMonth() === today.getMonth() &&
+              date.getDate() === today.getDate();
 
             return (
               <button
@@ -249,36 +339,66 @@ export default function SailingsCalendar({
                 onClick={() => hasSailing && onSelectDate(key)}
                 disabled={!hasSailing}
                 style={{
-                  minHeight: "32px",
+                  minHeight: "36px",
                   padding: "4px 2px",
-                  borderRadius: "8px",
+                  borderRadius: "999px",
                   border,
                   background: bg,
                   color,
                   cursor: hasSailing ? "pointer" : "default",
-                  opacity: hasSailing ? 1 : 0.35,
+                  opacity: hasSailing ? 1 : 0.4,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
+                  transition:
+                    "transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease",
+                  boxShadow,
                 }}
                 title={
                   hasSailing
                     ? sailingsToday.map((s) => s.title).join("\n")
                     : ""
                 }
+                onMouseDown={(e) => {
+                  if (!hasSailing) return;
+                  (e.currentTarget.style.transform = "scale(0.94)");
+                }}
+                onMouseUp={(e) => {
+                  (e.currentTarget.style.transform = "scale(1)");
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget.style.transform = "scale(1)");
+                }}
               >
                 <span>{date.getDate()}</span>
+
+                {/* Dot to indicate sailings */}
                 {hasSailing && !isSelected && (
                   <span
                     style={{
-                      width: "4px",
-                      height: "4px",
+                      width: "5px",
+                      height: "5px",
                       borderRadius: "999px",
                       marginTop: "2px",
                       background: "#1d4ed8",
                     }}
                   />
+                )}
+
+                {/* "Today" ring indicator (only if not selected) */}
+                {isToday && !isSelected && (
+                  <span
+                    style={{
+                      marginTop: "1px",
+                      fontSize: "8px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "#6b7280",
+                    }}
+                  >
+                    Today
+                  </span>
                 )}
               </button>
             );

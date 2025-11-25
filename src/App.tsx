@@ -13,6 +13,7 @@ import { getDailyForecastsForCity } from "./services/weather";
 import { getNceiStationForCity } from "./data/nceiStations";
 import { sampleItinerary } from "./data/mockData";
 
+
 type CruiseSelection = {
   lineId: string;
   shipId: string;
@@ -145,13 +146,36 @@ export default function App() {
       }
 
       // 2) basic mapping used by the UI (location + day index)
+      // Helper to normalize port/sea-day labels
+      const getLocationLabel = (day: CruiseDay, idx: number): string => {
+        const raw = (day as any).rawStopText ?? "";
+        const portName = (day as any).portName?.trim?.() ?? "";
+
+        const text = `${portName} ${raw}`.toLowerCase();
+
+        // Treat anything that looks like "at sea" / "sea day" as a sea day
+        if (text.includes("at sea") || text.includes("sea day")) {
+          return "At sea";
+        }
+
+        // If port name is empty but we have some raw text, use that
+        if (!portName && raw) {
+          return raw;
+        }
+
+        // Fallback to portName or a generic label
+        return portName || `Day ${idx + 1}`;
+      };
+
+      // 2) basic mapping used by the UI (location + day index)
       let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
         day: idx + 1,
         date: day.date, // will be overwritten with aligned date below
-        location: day.portName,
+        location: getLocationLabel(day, idx),
         icon: "sunny",
         description: "Loading weather…",
       }));
+
 
       // --- ALIGN DATES TO THE USER-SELECTED SAIL DATE ---
       // If we have the user's sail date, treat that as canonical; otherwise fall back to Apify's.
@@ -269,50 +293,54 @@ export default function App() {
     >
       {/* HEADER */}
       <header
-        style={{
-          maxWidth: "1040px",
-          margin: "0 auto 2rem auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: isMobile ? "center" : "space-between",
-          gap: "1.5rem",
-          flexDirection: isMobile ? "column" : "row",
-        }}
-      >
-        <img
-          src="/cruisecast-logo.webp"
-          alt="CruiseCast"
-          style={{
-            height: isMobile ? "46px" : "54px",
-            objectFit: "contain",
-          }}
-        />
+  style={{
+    maxWidth: "1040px",
+    margin: "0 auto 2rem auto",
+    display: "flex",
+    flexDirection: "column", // <-- Always stacked
+    alignItems: "center",    // <-- Center horizontally
+    textAlign: "center",     // <-- Center text
+    gap: "1rem",
+  }}
+>
+  {/* Logo */}
+  <img
+    src="/cruisecast-logo.webp"
+    alt="CruiseCast"
+    style={{
+      height: isMobile ? "46px" : "54px",
+      objectFit: "contain",
+    }}
+  />
 
-        <div
-          style={{
-            textAlign: isMobile ? "center" : "right",
-            color: "white",
-            fontSize: "11px",
-            fontWeight: 600,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-          }}
-        >
-          Plan Ahead • Sail Smart
-          <div
-            style={{
-              marginTop: "4px",
-              fontSize: "12px",
-              letterSpacing: 0,
-              fontWeight: 400,
-              opacity: 0.9,
-            }}
-          >
-            Forecast your cruise day by day — itineraries from real sailings,
-            weather from Tomorrow.io and NOAA climate normals.
-          </div>
-        </div>
-      </header>
+  {/* Tagline + description */}
+  <div
+    style={{
+      color: "white",
+      fontSize: "11px",
+      fontWeight: 600,
+      letterSpacing: "0.2em",
+      textTransform: "uppercase",
+    }}
+  >
+    Plan Ahead • Sail Smart
+
+    <div
+      style={{
+        marginTop: "4px",
+        fontSize: "12px",
+        fontWeight: 400,
+        letterSpacing: 0,
+        opacity: 0.9,
+        maxWidth: "620px", // keeps the paragraph readable
+      }}
+    >
+      Forecast your cruise day by day — itineraries from real sailings,  
+      weather from Tomorrow.io and NOAA climate normals.
+    </div>
+  </div>
+</header>
+
 
       {/* MAIN */}
       <main

@@ -522,7 +522,7 @@ export async function getItineraryFromApify(
     return d.date >= sailIso;
   });
 
-  const normalized = (filtered.length ? filtered : days).map(
+   const normalized = (filtered.length ? filtered : days).map(
     (d, index): CruiseDay => ({
       ...d,
       dayNumber: index + 1,
@@ -531,5 +531,49 @@ export async function getItineraryFromApify(
 
   console.log("Mapped Apify cruise days (aligned to sail date):", normalized);
 
-  return normalized;
+  // 🔹 NEW: insert synthetic "At sea" days to fill gaps between port dates
+  const expanded: CruiseDay[] = [];
+
+  for (let i = 0; i < normalized.length; i++) {
+    const current = normalized[i];
+    expanded.push(current);
+
+    if (i < normalized.length - 1) {
+      const next = normalized[i + 1];
+
+      // Only if both have valid dates
+      if (current.date && next.date) {
+        let cursor = current.date;
+
+        // Walk forward one day at a time until we reach the next port date
+        // For any missing day, add an "At sea" stop.
+        while (true) {
+          const nextDay = addDaysIso(cursor, 1);
+
+          // Stop once we've reached or passed the next real stop date
+          if (nextDay >= next.date) break;
+
+          expanded.push({
+            dayNumber: 0, // will be re-numbered below
+            date: nextDay,
+            portName: "At sea",
+            rawStopText: "At sea",
+          });
+
+          cursor = nextDay;
+        }
+      }
+    }
+  }
+
+  // Re-number all days sequentially
+  const finalDays: CruiseDay[] = expanded.map((d, index) => ({
+    ...d,
+    dayNumber: index + 1,
+  }));
+
+  console.log("Mapped Apify cruise days (with sea days):", finalDays);
+
+  return finalDays;
 }
+
