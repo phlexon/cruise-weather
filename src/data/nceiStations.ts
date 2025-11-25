@@ -1,12 +1,22 @@
-export function getNceiStationForCity(city: string): string | null {
-  if (!city) return null;
+// src/data/nceiStations.ts
+//
+// Maps embarkation cities/ports → NOAA/NCEI climate-normal stations.
+// These stations supply 30-year temperature & precipitation averages.
 
-  const key = city
-    .trim()
+export function getNceiStationForCity(cityLike: string): string | null {
+  if (!cityLike) return null;
+
+  // Normalize:
+  // - lowercase
+  // - remove anything in parentheses e.g. "(Embarkation)", "(Florida)"
+  // - collapse extra spaces
+  const stripped = cityLike
     .toLowerCase()
-    .replace(/\(.*?\)/g, "")   // removes "(Embarkation)" safely
+    .replace(/\(.*?\)/g, " ")   // remove (...) blocks
+    .replace(/\s+/g, " ")       // collapse multiple spaces
     .trim();
 
+  // Base map – keys should be short, "clean" city/port names
   const map: Record<string, string> = {
     "miami": "USW00012839",
     "fort lauderdale": "USW00012849",
@@ -18,7 +28,7 @@ export function getNceiStationForCity(city: string): string | null {
     "long beach": "USW00023129",
     "san diego": "USW00023188",
     "seattle": "USW00024233",
-    "vancouver": "CA001109078",
+    "vancouver": "CA001109078", // Canada station – optional
     "san francisco": "USW00023272",
     "cape liberty": "USW00014734",
     "bayonne": "USW00014734",
@@ -29,5 +39,19 @@ export function getNceiStationForCity(city: string): string | null {
     "mobile": "USW00013896",
   };
 
-  return map[key] ?? null;
+  // 1) Exact match on the stripped string
+  if (map[stripped]) {
+    return map[stripped];
+  }
+
+  // 2) Substring match – handles things like:
+  //    "port everglades (fort lauderdale, florida)"
+  //    "miami, florida"
+  for (const key of Object.keys(map)) {
+    if (stripped.includes(key)) {
+      return map[key];
+    }
+  }
+
+  return null;
 }
