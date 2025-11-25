@@ -243,68 +243,60 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
       </div>
 
       {/* Main temperature + details */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "4px",
-        }}
-      >
-        {/* Big, bright temp – very visible on mobile */}
-        {typeof mainTemp === "number" ? (
-          <div
-            style={{
-              fontSize: "32px",
-              fontWeight: 800,
-              lineHeight: 1,
-              textShadow: "0 2px 6px rgba(0,0,0,0.45)",
-            }}
-          >
-            {Math.round(mainTemp)}°
-          </div>
-        ) : (
-          <div
-            style={{
-              fontSize: "12px",
-              fontWeight: 500,
-              color: "rgba(241,245,249,0.95)",
-            }}
-          >
-            No live temperature available
-          </div>
-        )}
+      {/* Main temperature + details */}
+<div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "4px",
+  }}
+>
+  {/* Big, bright temp – very visible on mobile */}
+  {typeof mainTemp === "number" && (
+    <div
+      style={{
+        fontSize: "32px",
+        fontWeight: 800,
+        lineHeight: 1,
+        textShadow: "0 2px 6px rgba(0,0,0,0.45)",
+      }}
+    >
+      {Math.round(mainTemp)}°
+    </div>
+  )}
 
-        {(typeof day.high === "number" || typeof day.low === "number") && (
-          <div
-            style={{
-              fontSize: "11px",
-              fontWeight: 500,
-              color: "rgba(241,245,249,0.95)",
-            }}
-          >
-            {typeof day.high === "number" &&
-              `High ${Math.round(day.high)}°`}
-            {typeof day.high === "number" && typeof day.low === "number"
-              ? " · "
-              : ""}
-            {typeof day.low === "number" && `Low ${Math.round(day.low)}°`}
-          </div>
-        )}
+  {(typeof day.high === "number" || typeof day.low === "number") && (
+    <div
+      style={{
+        fontSize: "11px",
+        fontWeight: 500,
+        color: "rgba(241,245,249,0.95)",
+      }}
+    >
+      {typeof day.high === "number" &&
+        `High ${Math.round(day.high)}°`}
+      {typeof day.high === "number" && typeof day.low === "number"
+        ? " · "
+        : ""}
+      {typeof day.low === "number" && `Low ${Math.round(day.low)}°`}
+    </div>
+  )}
 
-        {typeof day.rainChance === "number" && (
-          <div
-            style={{
-              fontSize: "10px",
-              fontWeight: 400,
-              color: "rgba(226,232,240,0.9)",
-              marginTop: "2px",
-            }}
-          >
-            Chance of rain: {Math.round(day.rainChance)}%
-          </div>
-        )}
-      </div>
+  {typeof day.rainChance === "number" && (
+    <div
+      style={{
+        fontSize: "10px",
+        fontWeight: 400,
+        color: "rgba(226,232,240,0.9)",
+        marginTop: "2px",
+      }}
+    >
+      Chance of rain: {Math.round(day.rainChance)}%
+    </div>
+  )}
+</div>
+
     </div>
   );
 };
