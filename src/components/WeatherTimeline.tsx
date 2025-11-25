@@ -131,16 +131,15 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
   const isClimo = day.source === "climatology";
 
   // Normalize temps so it works even if values come through as strings
-  const normalizeTemp = (value: any): number | undefined => {
+  const normalizeTemp = (value: unknown): number | undefined => {
     if (value === null || value === undefined) return undefined;
     const n = Number(value);
     return Number.isFinite(n) ? n : undefined;
   };
 
-  const high = normalizeTemp(day.high as any);
-  const low = normalizeTemp(day.low as any);
+  const high = normalizeTemp(day.high);
+  const low = normalizeTemp(day.low);
   const mainTemp = high ?? low;
-
 
   const baseStyle: React.CSSProperties = {
     borderRadius: "24px",
@@ -248,59 +247,55 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
       </div>
 
       {/* Main temperature + details */}
-      {/* Main temperature + details */}
-<div
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "4px",
-  }}
->
-  {/* Big, bright temp – very visible on mobile */}
-{/* Big, bright temp – very visible on mobile */}
-{mainTemp !== undefined && (
-  <div
-    style={{
-      fontSize: "32px",
-      fontWeight: 800,
-      lineHeight: 1,
-      textShadow: "0 2px 6px rgba(0,0,0,0.45)",
-    }}
-  >
-    {Math.round(mainTemp)}°
-  </div>
-)}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "4px",
+        }}
+      >
+        {/* Big, bright temp – very visible on mobile */}
+        {mainTemp !== undefined && (
+          <div
+            style={{
+              fontSize: "32px",
+              fontWeight: 800,
+              lineHeight: 1,
+              textShadow: "0 2px 6px rgba(0,0,0,0.45)",
+            }}
+          >
+            {Math.round(mainTemp)}°
+          </div>
+        )}
 
-{(high !== undefined || low !== undefined) && (
-  <div
-    style={{
-      fontSize: "11px",
-      fontWeight: 500,
-      color: "rgba(241,245,249,0.95)",
-    }}
-  >
-    {high !== undefined && `High ${Math.round(high)}°`}
-    {high !== undefined && low !== undefined ? " · " : ""}
-    {low !== undefined && `Low ${Math.round(low)}°`}
-  </div>
-)}
+        {(high !== undefined || low !== undefined) && (
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 500,
+              color: "rgba(241,245,249,0.95)",
+            }}
+          >
+            {high !== undefined && `High ${Math.round(high)}°`}
+            {high !== undefined && low !== undefined ? " · " : ""}
+            {low !== undefined && `Low ${Math.round(low)}°`}
+          </div>
+        )}
 
-
-  {typeof day.rainChance === "number" && (
-    <div
-      style={{
-        fontSize: "10px",
-        fontWeight: 400,
-        color: "rgba(226,232,240,0.9)",
-        marginTop: "2px",
-      }}
-    >
-      Chance of rain: {Math.round(day.rainChance)}%
-    </div>
-  )}
-</div>
-
+        {typeof day.rainChance === "number" && (
+          <div
+            style={{
+              fontSize: "10px",
+              fontWeight: 400,
+              color: "rgba(226,232,240,0.9)",
+              marginTop: "2px",
+            }}
+          >
+            Chance of rain: {Math.round(day.rainChance)}%
+          </div>
+        )}
+      </div>
     </div>
   );
 };
