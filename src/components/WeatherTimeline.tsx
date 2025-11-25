@@ -1,5 +1,5 @@
 // src/components/WeatherTimeline.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type TimelineDay = {
   day: number;
@@ -89,8 +89,7 @@ function getThemeForDay(day: TimelineDay): WeatherTheme {
       break;
   }
 
-  // 2) If it's a climatology (30-year normals) day, keep the same color
-  //    but slightly soften the shadow so it feels a bit more "background".
+  // 2) Climatology days: soften the shadow a bit
   if (day.source === "climatology") {
     return {
       background: theme.background,
@@ -100,7 +99,6 @@ function getThemeForDay(day: TimelineDay): WeatherTheme {
 
   return theme;
 }
-
 
 const WeatherIcon: React.FC<{
   icon?: TimelineDay["icon"];
@@ -199,26 +197,24 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
         <span>{dateLabel}</span>
       </div>
 
-      {/* Location */}
-{/* Location (fixed-height so cards line up) */}
-<div
-  style={{
-    fontSize: "14px",
-    fontWeight: 700,
-    marginBottom: isClimo ? "3px" : "8px",
-    color: "white",
-    lineHeight: 1.35,
-    minHeight: "56px",          // reserve space for up to ~3 lines
-    display: "flex",
-    alignItems: "center",       // vertically center text within that space
-    justifyContent: "center",
-    textAlign: "center",
-    padding: "0 4px",           // tiny horizontal padding for long names
-  }}
->
-  <span>{day.location}</span>
-</div>
-
+      {/* Location (fixed-height so cards line up) */}
+      <div
+        style={{
+          fontSize: "14px",
+          fontWeight: 700,
+          marginBottom: isClimo ? "3px" : "8px",
+          color: "white",
+          lineHeight: 1.35,
+          minHeight: "56px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: "0 4px",
+        }}
+      >
+        <span>{day.location}</span>
+      </div>
 
       {/* Climatology badge */}
       {isClimo && (
@@ -252,18 +248,30 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: "2px",
+          gap: "4px",
         }}
       >
-        {typeof mainTemp === "number" && (
+        {/* Big, bright temp – very visible on mobile */}
+        {typeof mainTemp === "number" ? (
           <div
             style={{
-              fontSize: "30px",
-              fontWeight: 700,
+              fontSize: "32px",
+              fontWeight: 800,
               lineHeight: 1,
+              textShadow: "0 2px 6px rgba(0,0,0,0.45)",
             }}
           >
             {Math.round(mainTemp)}°
+          </div>
+        ) : (
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "rgba(241,245,249,0.95)",
+            }}
+          >
+            No live temperature available
           </div>
         )}
 
@@ -344,28 +352,6 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
     return itinerary.slice(start, start + CARDS_PER_PAGE);
   }, [isMobile, itinerary, page]);
 
-  // Mobile scroll state for gradient fades
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const updateScrollShadows = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    setCanScrollLeft(scrollLeft > 4);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
-  };
-
-  useEffect(() => {
-    if (!isMobile) return;
-    requestAnimationFrame(updateScrollShadows);
-  }, [isMobile, itinerary.length]);
-
-  const handleScroll: React.UIEventHandler<HTMLDivElement> = () => {
-    updateScrollShadows();
-  };
-
   // Arrow click animation state
   const [prevPressed, setPrevPressed] = useState(false);
   const [nextPressed, setNextPressed] = useState(false);
@@ -380,16 +366,13 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
     >
       {/* MAIN TIMELINE */}
       {isMobile ? (
-        // Mobile: horizontal scroll
+        // Mobile: horizontal scroll, NO gradients
         <div
           style={{
-            position: "relative",
             margin: "0 -6px",
           }}
         >
           <div
-            ref={scrollRef}
-            onScroll={handleScroll}
             style={{
               display: "flex",
               overflowX: "auto",
@@ -405,38 +388,6 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
               <WeatherCard key={day.day} day={day} isMobile={true} />
             ))}
           </div>
-
-          {/* Left gradient */}
-          {canScrollLeft && (
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: "24px",
-                pointerEvents: "none",
-                background:
-                  "linear-gradient(to right, rgba(248,250,252,0.96), rgba(248,250,252,0))",
-              }}
-            />
-          )}
-
-          {/* Right gradient */}
-          {canScrollRight && (
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: "24px",
-                pointerEvents: "none",
-                background:
-                  "linear-gradient(to left, rgba(248,250,252,0.96), rgba(248,250,252,0))",
-              }}
-            />
-          )}
         </div>
       ) : (
         // Desktop: 3 cards + arrow nav
@@ -485,21 +436,18 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
             />
           </button>
 
- <div
-  style={{
-    flex: 1,
-    display: "flex",
-    gap: "12px",
-    paddingBottom: "25px",   // extra room for shadows
-
-    // overflow: "hidden",  // remove this
-  }}
->
-  {desktopSlice.map((day) => (
-    <WeatherCard key={day.day} day={day} isMobile={false} />
-  ))}
-</div>
-
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              gap: "12px",
+              paddingBottom: "25px", // extra room for shadows
+            }}
+          >
+            {desktopSlice.map((day) => (
+              <WeatherCard key={day.day} day={day} isMobile={false} />
+            ))}
+          </div>
 
           <button
             type="button"

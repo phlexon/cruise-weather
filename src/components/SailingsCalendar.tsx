@@ -1,409 +1,257 @@
 // src/components/SailingsCalendar.tsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 
 export type Sailing = {
   date: string; // "YYYY-MM-DD"
-  title: string;
+  title?: string;
 };
 
 type SailingsCalendarProps = {
   sailings: Sailing[];
-  selectedDate?: string;
-  onSelectDate: (date: string) => void;
+  selectedDate: string; // "YYYY-MM-DD"
+  onSelectDate: (dateIso: string) => void;
 };
 
-function toKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
+function parseIso(dateIso: string): Date {
+  return new Date(dateIso + "T12:00:00");
 }
+
+function formatMonthYear(d: Date): string {
+  return d.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function toIso(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function SailingsCalendar({
   sailings,
   selectedDate,
   onSelectDate,
 }: SailingsCalendarProps) {
-  // Map: date ISO -> sailings[] for that day
-  const sailingByDate = useMemo(() => {
-    const map = new Map<string, Sailing[]>();
-    for (const s of sailings) {
-      const key = s.date;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(s);
-    }
-    return map;
-  }, [sailings]);
+  // Determine initial month: selected date, first sailing, or today
+  const initialMonth = useMemo(() => {
+    if (selectedDate) return parseIso(selectedDate);
+    if (sailings.length > 0) return parseIso(sailings[0].date);
+    return new Date();
+  }, [selectedDate, sailings]);
 
-  // All months that have *any* sailing, as "YYYY-MM"
-  const monthKeys = useMemo(() => {
+  const [monthStart, setMonthStart] = useState<Date>(() => {
+    const d = new Date(initialMonth);
+    d.setDate(1);
+    return d;
+  });
+
+  // Quick lookup for sailing dates
+  const sailingDatesSet = useMemo(() => {
     const set = new Set<string>();
-    for (const s of sailings) {
-      const [y, m] = s.date.split("-");
-      set.add(`${y}-${m}`);
-    }
-    return Array.from(set).sort(); // ascending
+    sailings.forEach((s) => set.add(s.date));
+    return set;
   }, [sailings]);
 
-  const minMonthKey = monthKeys[0];
-  const maxMonthKey = monthKeys[monthKeys.length - 1];
+  const selectedIso = selectedDate || "";
 
-  // Initial visible month: earliest sailing month or current month
-  const [year, setYear] = useState<number>(() => {
-    if (sailings.length) {
-      const [y] = sailings[0].date.split("-");
-      return parseInt(y, 10);
-    }
-    return new Date().getFullYear();
-  });
+  // Build calendar grid for the current month
+  const days: { iso: string; inMonth: boolean; hasSailing: boolean }[] =
+    useMemo(() => {
+      const daysArr: { iso: string; inMonth: boolean; hasSailing: boolean }[] =
+        [];
 
-  const [month, setMonth] = useState<number>(() => {
-    if (sailings.length) {
-      const [, m] = sailings[0].date.split("-");
-      return parseInt(m, 10) - 1; // 0-based
-    }
-    return new Date().getMonth();
-  });
+      const year = monthStart.getFullYear();
+      const month = monthStart.getMonth();
 
-  // If sailings list changes (e.g., different ship), reset to earliest month
-  useEffect(() => {
-    if (!sailings.length) return;
-    const [y, m] = sailings[0].date.split("-");
-    setYear(parseInt(y, 10));
-    setMonth(parseInt(m, 10) - 1);
-  }, [sailings]);
+      // First day of this month (0..6, Sun..Sat)
+      const firstOfMonth = new Date(year, month, 1);
+      const startWeekday = firstOfMonth.getDay();
 
-  const currentMonthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
-  const canGoPrev = !!minMonthKey && currentMonthKey > minMonthKey;
-  const canGoNext = !!maxMonthKey && currentMonthKey < maxMonthKey;
+      // Go back to the Sunday (or whatever is the first column) before the 1st
+      const gridStart = new Date(year, month, 1 - startWeekday);
 
-  const goMonth = (direction: -1 | 1) => {
-    let newYear = year;
-    let newMonth = month + direction;
+      // We will render 6 weeks * 7 days = 42 cells
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(gridStart);
+        d.setDate(gridStart.getDate() + i);
 
-    if (newMonth < 0) {
-      newMonth = 11;
-      newYear -= 1;
-    } else if (newMonth > 11) {
-      newMonth = 0;
-      newYear += 1;
-    }
+        const inMonth = d.getMonth() === month;
+        const iso = toIso(d);
+        const hasSailing = sailingDatesSet.has(iso);
 
-    const newKey = `${newYear}-${String(newMonth + 1).padStart(2, "0")}`;
+        daysArr.push({ iso, inMonth, hasSailing });
+      }
 
-    // Clamp so we don't move past the range of actual sailings
-    if (direction === -1 && minMonthKey && newKey < minMonthKey) return;
-    if (direction === 1 && maxMonthKey && newKey > maxMonthKey) return;
+      return daysArr;
+    }, [monthStart, sailingDatesSet]);
 
-    setYear(newYear);
-    setMonth(newMonth);
+  const handlePrevMonth = () => {
+    const d = new Date(monthStart);
+    d.setMonth(d.getMonth() - 1);
+    setMonthStart(d);
   };
 
-  // Build calendar grid for visible month
-  const firstOfMonth = new Date(year, month, 1);
-  const firstDayOfWeek = firstOfMonth.getDay(); // 0 = Sun
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const weeks: Array<Array<Date | null>> = [];
-  let currentWeek: Array<Date | null> = new Array(firstDayOfWeek).fill(null);
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    currentWeek.push(new Date(year, month, day));
-    if (currentWeek.length === 7) {
-      weeks.push(currentWeek);
-      currentWeek = [];
-    }
-  }
-  if (currentWeek.length) {
-    while (currentWeek.length < 7) currentWeek.push(null);
-    weeks.push(currentWeek);
-  }
-
-  const monthLabel = firstOfMonth.toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
-
-  const selectedKey = selectedDate ?? "";
-
-  // Arrow press animation state
-  const [prevPressed, setPrevPressed] = useState(false);
-  const [nextPressed, setNextPressed] = useState(false);
+  const handleNextMonth = () => {
+    const d = new Date(monthStart);
+    d.setMonth(d.getMonth() + 1);
+    setMonthStart(d);
+  };
 
   return (
     <div
       style={{
-        marginTop: "10px",
         borderRadius: "16px",
-        border: "1px solid rgba(148,163,184,0.35)",
-        padding: "12px 14px 14px",
-        background:
-          "linear-gradient(135deg, rgba(248,250,252,0.98), rgba(239,246,255,0.98))",
-        boxShadow: "0 16px 40px rgba(15,23,42,0.12)",
+        border: "1px solid #e5e7eb",
+        backgroundColor: "white",
+        padding: "10px 10px 8px",
+        boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
       }}
     >
-      {/* Header + navigation */}
+      {/* HEADER: month + arrows span full width */}
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "10px",
+          justifyContent: "space-between",
+          width: "100%",
           gap: "8px",
+          marginBottom: "8px",
         }}
       >
-        <div>
-          <div
-            style={{
-              fontSize: "12px",
-              fontWeight: 600,
-              color: "#0f172a",
-            }}
-          >
-            Available sailings
-          </div>
-          <div
-            style={{
-              fontSize: "10px",
-              color: "#6b7280",
-              marginTop: "2px",
-            }}
-          >
-            Tap a highlighted date to auto-run your search.
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={handlePrevMonth}
+          style={{
+            borderRadius: "999px",
+            border: "1px solid #d1d5db",
+            backgroundColor: "white",
+            padding: "4px 10px",
+            fontSize: "12px",
+            cursor: "pointer",
+          }}
+        >
+          ◀
+        </button>
 
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
+            flex: 1,
+            textAlign: "center",
+            fontSize: "13px",
+            fontWeight: 600,
+            color: "#111827",
           }}
         >
-          <button
-            type="button"
-            onClick={() => goMonth(-1)}
-            onMouseDown={() => canGoPrev && setPrevPressed(true)}
-            onMouseUp={() => setPrevPressed(false)}
-            onMouseLeave={() => setPrevPressed(false)}
-            disabled={!canGoPrev}
-            style={{
-              width: "28px",
-              height: "28px",
-              borderRadius: "999px",
-              border: "1px solid rgba(148,163,184,0.7)",
-              background: canGoPrev ? "white" : "#e5e7eb",
-              cursor: canGoPrev ? "pointer" : "default",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transform: prevPressed ? "scale(0.9)" : "scale(1)",
-              transition:
-                "transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease",
-              boxShadow: prevPressed
-                ? "0 4px 10px rgba(15,23,42,0.18)"
-                : "none",
-            }}
-          >
-            <img
-              src="/icons/arrow.svg"
-              alt="Previous month"
-              style={{
-                width: "14px",
-                height: "14px",
-                transform: "rotate(180deg)",
-                opacity: canGoPrev ? 1 : 0.65,
-              }}
-            />
-          </button>
-
-          <div
-            style={{
-              fontSize: "11px",
-              fontWeight: 600,
-              color: "#111827",
-              padding: "4px 8px",
-              borderRadius: "999px",
-              background: "rgba(255,255,255,0.9)",
-              border: "1px solid rgba(209,213,219,0.8)",
-            }}
-          >
-            {monthLabel}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => goMonth(1)}
-            onMouseDown={() => canGoNext && setNextPressed(true)}
-            onMouseUp={() => setNextPressed(false)}
-            onMouseLeave={() => setNextPressed(false)}
-            disabled={!canGoNext}
-            style={{
-              width: "28px",
-              height: "28px",
-              borderRadius: "999px",
-              border: "1px solid rgba(148,163,184,0.7)",
-              background: canGoNext ? "white" : "#e5e7eb",
-              cursor: canGoNext ? "pointer" : "default",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transform: nextPressed ? "scale(0.9)" : "scale(1)",
-              transition:
-                "transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease",
-              boxShadow: nextPressed
-                ? "0 4px 10px rgba(15,23,42,0.18)"
-                : "none",
-            }}
-          >
-            <img
-              src="/icons/arrow.svg"
-              alt="Next month"
-              style={{
-                width: "14px",
-                height: "14px",
-                opacity: canGoNext ? 1 : 0.65,
-              }}
-            />
-          </button>
+          {formatMonthYear(monthStart)}
         </div>
+
+        <button
+          type="button"
+          onClick={handleNextMonth}
+          style={{
+            borderRadius: "999px",
+            border: "1px solid #d1d5db",
+            backgroundColor: "white",
+            padding: "4px 10px",
+            fontSize: "12px",
+            cursor: "pointer",
+          }}
+        >
+          ▶
+        </button>
       </div>
 
-      {/* Day-of-week header */}
+      {/* Weekday labels */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          fontSize: "10px",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: "#9ca3af",
+          gap: "4px",
           marginBottom: "4px",
         }}
       >
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} style={{ textAlign: "center" }}>
-            {d}
+        {weekdayLabels.map((label) => (
+          <div
+            key={label}
+            style={{
+              textAlign: "center",
+              fontSize: "10px",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "#9ca3af",
+            }}
+          >
+            {label}
           </div>
         ))}
       </div>
 
-      {/* Calendar grid */}
+      {/* Days grid */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          gap: "3px",
-          fontSize: "11px",
+          gap: "4px",
         }}
       >
-        {weeks.map((week, wi) =>
-          week.map((date, di) => {
-            if (!date) {
-              return <div key={`${wi}-${di}`} />;
-            }
+        {days.map((day) => {
+          const d = parseIso(day.iso);
+          const dayNum = d.getDate();
+          const isSelected = day.iso === selectedIso;
 
-            const key = toKey(date);
-            const sailingsToday = sailingByDate.get(key) ?? [];
-            const hasSailing = sailingsToday.length > 0;
-            const isSelected = selectedKey === key;
+          const baseBg = day.inMonth ? "#f9fafb" : "#f3f4f6";
+          const sailingBg = day.hasSailing ? "#dbeafe" : baseBg;
+          const finalBg = isSelected ? "#2563eb" : sailingBg;
 
-            const baseBg = hasSailing ? "#eff6ff" : "transparent";
-            const bg = isSelected ? "linear-gradient(135deg,#2563eb,#0ea5e9)" : baseBg;
+          const baseColor = day.inMonth ? "#111827" : "#9ca3af";
+          const finalColor = isSelected ? "white" : baseColor;
 
-            const color = isSelected
-              ? "white"
-              : hasSailing
-              ? "#1d4ed8"
-              : "#6b7280";
+          return (
+            <button
+              key={day.iso}
+              type="button"
+              onClick={() => day.hasSailing && onSelectDate(day.iso)}
+              disabled={!day.hasSailing}
+              style={{
+                borderRadius: "999px",
+                border: "none",
+                padding: "5px 0",
+                fontSize: "12px",
+                fontWeight: day.hasSailing ? 600 : 400,
+                backgroundColor: finalBg,
+                color: finalColor,
+                cursor: day.hasSailing ? "pointer" : "default",
+                boxShadow: isSelected
+                  ? "0 0 0 1px rgba(37,99,235,0.4)"
+                  : "none",
+                opacity: day.hasSailing ? 1 : 0.4,
+              }}
+            >
+              {dayNum}
+            </button>
+          );
+        })}
+      </div>
 
-            const border = isSelected
-              ? "1px solid rgba(37,99,235,0.9)"
-              : hasSailing
-              ? "1px solid rgba(191,219,254,1)"
-              : "1px solid transparent";
-
-            const boxShadow = isSelected
-              ? "0 6px 12px rgba(37,99,235,0.35)"
-              : hasSailing
-              ? "0 3px 8px rgba(148,163,184,0.22)"
-              : "none";
-
-            const today = new Date();
-            const isToday =
-              date.getFullYear() === today.getFullYear() &&
-              date.getMonth() === today.getMonth() &&
-              date.getDate() === today.getDate();
-
-            return (
-              <button
-                key={`${wi}-${di}`}
-                type="button"
-                onClick={() => hasSailing && onSelectDate(key)}
-                disabled={!hasSailing}
-                style={{
-                  minHeight: "36px",
-                  padding: "4px 2px",
-                  borderRadius: "999px",
-                  border,
-                  background: bg,
-                  color,
-                  cursor: hasSailing ? "pointer" : "default",
-                  opacity: hasSailing ? 1 : 0.4,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition:
-                    "transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease",
-                  boxShadow,
-                }}
-                title={
-                  hasSailing
-                    ? sailingsToday.map((s) => s.title).join("\n")
-                    : ""
-                }
-                onMouseDown={(e) => {
-                  if (!hasSailing) return;
-                  (e.currentTarget.style.transform = "scale(0.94)");
-                }}
-                onMouseUp={(e) => {
-                  (e.currentTarget.style.transform = "scale(1)");
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget.style.transform = "scale(1)");
-                }}
-              >
-                <span>{date.getDate()}</span>
-
-                {/* Dot to indicate sailings */}
-                {hasSailing && !isSelected && (
-                  <span
-                    style={{
-                      width: "5px",
-                      height: "5px",
-                      borderRadius: "999px",
-                      marginTop: "2px",
-                      background: "#1d4ed8",
-                    }}
-                  />
-                )}
-
-                {/* "Today" ring indicator (only if not selected) */}
-                {isToday && !isSelected && (
-                  <span
-                    style={{
-                      marginTop: "1px",
-                      fontSize: "8px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      color: "#6b7280",
-                    }}
-                  >
-                    Today
-                  </span>
-                )}
-              </button>
-            );
-          })
-        )}
+      {/* Legend */}
+      <div
+        style={{
+          marginTop: "6px",
+          fontSize: "10px",
+          color: "#6b7280",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "8px",
+          flexWrap: "wrap",
+        }}
+      >
+        <span>● Blue = sailing available</span>
+        <span>● Tap a date to select</span>
       </div>
     </div>
   );
