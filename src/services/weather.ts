@@ -425,14 +425,17 @@ export async function getDailyForecastsForCity(
           const base = merged[bestKey];
           if (!base) continue;
 
-          merged[iso] = {
-            ...base,
-            source: "climatology",
-            description:
-              base.source === "climatology"
-                ? base.description
-                : "Approximate conditions based on nearby days (used when detailed climatology is unavailable).",
-          };
+merged[iso] = {
+  ...base,
+  // Force these to visually look like "average" days
+  icon: "partly",
+  source: "climatology",
+  description:
+    base.source === "climatology"
+      ? base.description
+      : "Approximate conditions based on nearby days (used when detailed climatology is unavailable).",
+};
+
         }
 
         console.log("[Weather] Filled remaining missing by nearest neighbor:", {
