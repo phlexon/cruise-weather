@@ -35,8 +35,6 @@ type NceiMonthlyNormalRow = {
 
 const nceiNormalsCache: Record<string, NceiMonthlyNormalRow[]> = {};
 
-// Base URL for proxy (same origin by default, but we normalize & allow empty)
-
 // Base URL for proxy (optional).
 // If not set, we'll call "/api/ncei-normals" directly.
 const NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL;
@@ -63,7 +61,6 @@ function buildNceiProxyUrl(stationId: string): string {
 
   return `${trimmed}/ncei-normals?stationId=${encodeURIComponent(stationId)}`;
 }
-
 
 // --- Helpers -------------------------------------------------------
 
@@ -96,6 +93,7 @@ async function getNceiMonthlyNormalsForStation(
   }
 
   const url = buildNceiProxyUrl(stationId);
+  console.log("[NCEI] Fetching normals from:", url);
 
   let res: Response;
   let text: string;
@@ -112,7 +110,8 @@ async function getNceiMonthlyNormalsForStation(
 
   if (!res.ok || !contentType.includes("application/json")) {
     console.error(
-      "NCEI normals proxy returned non-JSON or error response:",
+      "[NCEI] Proxy returned non-JSON or error response:",
+      res.status,
       text.slice(0, 200)
     );
     // Don't blow up the app; just skip climatology in this case.
@@ -125,6 +124,7 @@ async function getNceiMonthlyNormalsForStation(
       | NceiMonthlyNormalRow;
     const rows = Array.isArray(json) ? json : [json];
     nceiNormalsCache[stationId] = rows;
+    console.log("[NCEI] Loaded normals rows:", rows.length);
     return rows;
   } catch (err) {
     console.error("[NCEI] Failed to parse proxy JSON:", err, text.slice(0, 200));
@@ -159,20 +159,32 @@ async function fillMissingWithClimatology(
   existing: Record<string, DailyForecast>,
   stationId?: string
 ): Promise<Record<string, DailyForecast>> {
-  if (!stationId) return existing;
+  if (!stationId) {
+    console.log("[NCEI] No stationId provided, skipping climatology.");
+    return existing;
+  }
 
   const missingDates = dates.filter((d) => !existing[d]);
-  if (!missingDates.length) return existing;
+  if (!missingDates.length) {
+    console.log("[NCEI] No missing dates to fill with climatology.");
+    return existing;
+  }
+
+  console.log("[NCEI] Filling missing days with climatology:", {
+    stationId,
+    missingDates,
+  });
 
   let normals: NceiMonthlyNormalRow[];
   try {
     normals = await getNceiMonthlyNormalsForStation(stationId);
   } catch (err) {
-    console.error("Failed to get NCEI climatology:", err);
+    console.error("[NCEI] Failed to get climatology:", err);
     return existing;
   }
 
   if (!normals || normals.length === 0) {
+    console.warn("[NCEI] No normals returned for station:", stationId);
     // No normals available; just return what we have from Tomorrow.io
     return existing;
   }
@@ -201,21 +213,29 @@ async function fillMissingWithClimatology(
 
     const high =
       tMax != null
-        ? parseFloat(tMax)
+        ? Number(tMax)
         : tAvg != null
-        ? parseFloat(tAvg)
+        ? Number(tAvg)
         : existing[iso]?.high ?? NaN;
 
     const low =
       tMin != null
-        ? parseFloat(tMin)
+        ? Number(tMin)
         : tAvg != null
-        ? parseFloat(tAvg)
+        ? Number(tAvg)
         : existing[iso]?.low ?? NaN;
 
-    if (Number.isNaN(high) || Number.isNaN(low)) continue;
+    if (!Number.isFinite(high) || !Number.isFinite(low)) {
+      console.warn("[NCEI] Skipping normals with bad temps:", {
+        iso,
+        tMax,
+        tMin,
+        tAvg,
+      });
+      continue;
+    }
 
-    const precipInches = prcp != null ? parseFloat(prcp) : 0;
+    const precipInches = prcp != null ? Number(prcp) : 0;
     const rainChance = Math.max(
       0,
       Math.min(100, Math.round(precipInches * 10))
@@ -224,7 +244,7 @@ async function fillMissingWithClimatology(
     existing[iso] = {
       high,
       low,
-      rainChance,
+      rainChance: rainChance,
       icon: "partly",
       description: `Typical conditions for this time of year (30-year average). High ~${Math.round(
         high
@@ -233,6 +253,7 @@ async function fillMissingWithClimatology(
     };
   }
 
+  console.log("[NCEI] After fill, keys:", Object.keys(existing));
   return existing;
 }
 
@@ -275,7 +296,7 @@ export async function getDailyForecastsForCity(
     const text = await res.text().catch(() => "");
     if (options?.nceiStationId) {
       console.warn(
-        "Tomorrow.io error, falling back entirely to climatology:",
+        "[Tomorrow.io] Error, falling back entirely to climatology:",
         res.status,
         text.substring(0, 160)
       );
@@ -331,9 +352,11 @@ export async function getDailyForecastsForCity(
 
   // Missing dates + debug
   const missingDates = dates.filter((d) => !byDate[d]);
-  console.log("Weather debug:", {
+  console.log("[Weather] Forecast debug:", {
     city,
     stationId: options?.nceiStationId ?? null,
+    requested: dates,
+    coveredByForecast: Object.keys(byDate),
     missingDates,
   });
 
@@ -352,6 +375,13 @@ export async function getDailyForecastsForCity(
     );
 
     const finalMissing = dates.filter((d) => !merged[d]);
+    console.log("[Weather] After climatology fill:", {
+      city,
+      stationId: options.nceiStationId,
+      finalMissing,
+      keysAfterFill: Object.keys(merged),
+    });
+
     if (finalMissing.length === dates.length) {
       const available = Object.keys(merged);
       throw new Error(
