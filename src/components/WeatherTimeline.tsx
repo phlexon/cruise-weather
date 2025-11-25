@@ -256,7 +256,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
         }}
       >
         {/* Big, bright temp – very visible on mobile */}
-        {mainTemp !== undefined && (
+        {mainTemp !== undefined ? (
           <div
             style={{
               fontSize: "32px",
@@ -266,6 +266,17 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
             }}
           >
             {Math.round(mainTemp)}°
+          </div>
+        ) : (
+          // last-resort fallback so it's never totally blank
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              opacity: 0.8,
+            }}
+          >
+            --°
           </div>
         )}
 
@@ -295,6 +306,20 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
             Chance of rain: {Math.round(day.rainChance)}%
           </div>
         )}
+
+        {/* DEBUG LINE – you can delete this once things look right */}
+        <div
+          style={{
+            marginTop: "4px",
+            fontSize: "9px",
+            color: "rgba(248,250,252,0.7)",
+            opacity: 0.7,
+          }}
+        >
+          {`debug hi=${String(day.high)} (${typeof day.high}), lo=${String(
+            day.low
+          )} (${typeof day.low})`}
+        </div>
       </div>
     </div>
   );
