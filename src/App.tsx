@@ -13,7 +13,6 @@ import { getDailyForecastsForCity } from "./services/weather";
 import { getNceiStationForCity } from "./data/nceiStations";
 import { sampleItinerary } from "./data/mockData";
 
-
 type CruiseSelection = {
   lineId: string;
   shipId: string;
@@ -124,7 +123,7 @@ export default function App() {
     setHasWeather(false);
 
     try {
-      // 1) load itinerary from Apify
+      // 1) Load itinerary from Apify
       const cruiseDays: CruiseDay[] = await getItineraryFromApify({
         shipName: cruise.shipName,
         sailDate: cruise.departIso,
@@ -145,7 +144,6 @@ export default function App() {
         );
       }
 
-      // 2) basic mapping used by the UI (location + day index)
       // Helper to normalize port/sea-day labels
       const getLocationLabel = (day: CruiseDay, idx: number): string => {
         const raw = (day as any).rawStopText ?? "";
@@ -167,7 +165,7 @@ export default function App() {
         return portName || `Day ${idx + 1}`;
       };
 
-      // 2) basic mapping used by the UI (location + day index)
+      // 2) Basic mapping used by the UI (location + day index)
       let mapped: ItineraryDay[] = daysToUse.map((day, idx) => ({
         day: idx + 1,
         date: day.date, // will be overwritten with aligned date below
@@ -175,7 +173,6 @@ export default function App() {
         icon: "sunny",
         description: "Loading weather…",
       }));
-
 
       // --- ALIGN DATES TO THE USER-SELECTED SAIL DATE ---
       // If we have the user's sail date, treat that as canonical; otherwise fall back to Apify's.
@@ -188,17 +185,40 @@ export default function App() {
         return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
       });
 
-      // 3) enrich with Tomorrow.io + NCEI climatology fallback
+      // 3) Enrich with Tomorrow.io + NCEI climatology fallback
       try {
-        const embarkationLocation = mapped[0]?.location ?? "Miami";
-        const embarkationCity = embarkationLocation.split(",")[0];
-        const stationId = getNceiStationForCity(embarkationCity);
+        // IMPORTANT: use the *real* port from Apify for the city, not the
+        // label ("At sea", etc.)
+        const firstDay = daysToUse[0] as any;
+        const rawPort =
+          firstDay?.portName ||
+          firstDay?.rawStopText ||
+          mapped[0]?.location ||
+          "Miami";
+
+        const cleanedRawPort =
+          typeof rawPort === "string"
+            ? rawPort.replace("(Embarkation)", "").trim()
+            : "Miami";
+
+        // Take just the city portion (before the first comma)
+        let embarkationCity = cleanedRawPort.split(",")[0].trim();
+        if (!embarkationCity) embarkationCity = "Miami";
+
+        const stationId = getNceiStationForCity(embarkationCity) ?? undefined;
+
+        console.log("[Weather] Using city/station:", {
+          embarkationCity,
+          stationId,
+        });
 
         const forecastsByDate = await getDailyForecastsForCity(
           embarkationCity,
           isoDates,
-          { nceiStationId: stationId ?? undefined }
+          { nceiStationId: stationId }
         );
+
+        console.log("[Weather] Forecasts by date:", forecastsByDate);
 
         let anyWeather = false;
 
@@ -206,16 +226,19 @@ export default function App() {
           const dateKey = isoDates[idx];
           const forecast = forecastsByDate[dateKey];
 
-          // always use aligned date for display
+          // Always use aligned date for display
           const baseDay: ItineraryDay = {
             ...day,
-            date: isoDates[idx],
+            date: dateKey,
           };
 
           if (!forecast) {
             return {
               ...baseDay,
-              description: "Weather not available for this day yet.",
+              description:
+                baseDay.description === "Loading weather…"
+                  ? "Weather not available for this day yet."
+                  : baseDay.description,
             };
           }
 
@@ -293,54 +316,52 @@ export default function App() {
     >
       {/* HEADER */}
       <header
-  style={{
-    maxWidth: "1040px",
-    margin: "0 auto 2rem auto",
-    display: "flex",
-    flexDirection: "column", // <-- Always stacked
-    alignItems: "center",    // <-- Center horizontally
-    textAlign: "center",     // <-- Center text
-    gap: "1rem",
-  }}
->
-  {/* Logo */}
-  <img
-    src="/cruisecast-logo.webp"
-    alt="CruiseCast"
-    style={{
-      height: isMobile ? "46px" : "54px",
-      objectFit: "contain",
-    }}
-  />
+        style={{
+          maxWidth: "1040px",
+          margin: "0 auto 2rem auto",
+          display: "flex",
+          flexDirection: "column", // <-- Always stacked
+          alignItems: "center", // <-- Center horizontally
+          textAlign: "center", // <-- Center text
+          gap: "1rem",
+        }}
+      >
+        {/* Logo */}
+        <img
+          src="/cruisecast-logo.webp"
+          alt="CruiseCast"
+          style={{
+            height: isMobile ? "46px" : "54px",
+            objectFit: "contain",
+          }}
+        />
 
-  {/* Tagline + description */}
-  <div
-    style={{
-      color: "white",
-      fontSize: "11px",
-      fontWeight: 600,
-      letterSpacing: "0.2em",
-      textTransform: "uppercase",
-    }}
-  >
-    Plan Ahead • Sail Smart
-
-    <div
-      style={{
-        marginTop: "4px",
-        fontSize: "12px",
-        fontWeight: 400,
-        letterSpacing: 0,
-        opacity: 0.9,
-        maxWidth: "620px", // keeps the paragraph readable
-      }}
-    >
-      Forecast your cruise day by day — itineraries from real sailings,  
-      weather from Tomorrow.io and NOAA climate normals.
-    </div>
-  </div>
-</header>
-
+        {/* Tagline + description */}
+        <div
+          style={{
+            color: "white",
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+          }}
+        >
+          Plan Ahead • Sail Smart
+          <div
+            style={{
+              marginTop: "4px",
+              fontSize: "12px",
+              fontWeight: 400,
+              letterSpacing: 0,
+              opacity: 0.9,
+              maxWidth: "620px", // keeps the paragraph readable
+            }}
+          >
+            Forecast your cruise day by day — itineraries from real sailings,
+            weather from Tomorrow.io and NOAA climate normals.
+          </div>
+        </div>
+      </header>
 
       {/* MAIN */}
       <main
@@ -600,8 +621,8 @@ export default function App() {
           color: "rgba(255,255,255,0.9)",
         }}
       >
-        v1.0 — Cruises & itineraries from Apify, weather by Tomorrow.io and
-        NOAA NCEI.
+        v1.0 — Cruises & itineraries from Apify, weather by Tomorrow.io and NOAA
+        NCEI.
       </footer>
     </div>
   );
