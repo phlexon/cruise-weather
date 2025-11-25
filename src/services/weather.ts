@@ -36,21 +36,34 @@ type NceiMonthlyNormalRow = {
 const nceiNormalsCache: Record<string, NceiMonthlyNormalRow[]> = {};
 
 // Base URL for proxy (same origin by default, but we normalize & allow empty)
-const NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL ?? "";
+
+// Base URL for proxy (optional).
+// If not set, we'll call "/api/ncei-normals" directly.
+const NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL;
 
 /**
  * Build the URL for the NCEI proxy.
- * - If NCEI_PROXY_BASE is set, we use it as the origin.
- * - If it's empty, we fall back to a relative path: "/api/ncei-normals?...".
+ *
+ * - If VITE_NCEI_PROXY_BASE_URL is set (e.g. "/api"), we call:
+ *     "<base>/ncei-normals?stationId=..."
+ *   so "/api" → "/api/ncei-normals?..."
+ *
+ * - If it's NOT set, we fall back to:
+ *     "/api/ncei-normals?stationId=..."
  */
 function buildNceiProxyUrl(stationId: string): string {
-  const base = NCEI_PROXY_BASE || ""; // if empty, use relative path
-  const trimmed = base.endsWith("/") ? base.slice(0, -1) : base;
+  if (!NCEI_PROXY_BASE) {
+    // Default: same-origin API route
+    return `/api/ncei-normals?stationId=${encodeURIComponent(stationId)}`;
+  }
 
-  return `${trimmed}/api/ncei-normals?stationId=${encodeURIComponent(
-    stationId
-  )}`;
+  const trimmed = NCEI_PROXY_BASE.endsWith("/")
+    ? NCEI_PROXY_BASE.slice(0, -1)
+    : NCEI_PROXY_BASE;
+
+  return `${trimmed}/ncei-normals?stationId=${encodeURIComponent(stationId)}`;
 }
+
 
 // --- Helpers -------------------------------------------------------
 
