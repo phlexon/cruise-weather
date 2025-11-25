@@ -1,14 +1,24 @@
 // src/data/nceiStations.ts
-//
-// Maps embarkation cities → NOAA/NCEI climate-normal stations.
-// These stations supply 30-year temperature & precipitation averages.
 
 export function getNceiStationForCity(city: string): string | null {
   if (!city) return null;
 
-  const key = city.trim().toLowerCase();
+  // Normalize input
+  let key = city.trim().toLowerCase();
 
-  // Add any embarkation city you want here
+  // Strip country names, states, etc.
+  key = key
+    .replace(/,?\s*united states/i, "")
+    .replace(/,?\s*usa/i, "")
+    .replace(/,?\s*us$/i, "")
+    .replace(/,?\s*canada/i, "")
+    .replace(/,?\s*ca$/i, "")
+    .trim();
+
+  // Optional: remove anything after commas
+  key = key.split(",")[0].trim();
+
+  // Lookup table
   const map: Record<string, string> = {
     "miami": "USW00012839",
     "fort lauderdale": "USW00012849",
@@ -20,7 +30,7 @@ export function getNceiStationForCity(city: string): string | null {
     "long beach": "USW00023129",
     "san diego": "USW00023188",
     "seattle": "USW00024233",
-    "vancouver": "CA001109078", // Canada station – optional
+    "vancouver": "CA001109078",
     "san francisco": "USW00023272",
     "cape liberty": "USW00014734",
     "bayonne": "USW00014734",
