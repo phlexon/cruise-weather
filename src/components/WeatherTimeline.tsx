@@ -145,7 +145,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
     borderRadius: "24px",
     padding: "16px 18px",
     background: theme.background,
-    boxShadow: theme.shadow,
+    boxShadow: isMobile ? "none" : theme.shadow, // 👈 no shadow on mobile
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -164,13 +164,15 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
     baseStyle.cursor = "pointer";
   }
 
-  const transform = isPressed
-    ? "scale(0.96)"
-    : isHovered
-    ? "translateY(-3px)"
+  const transform = !isMobile
+    ? isPressed
+      ? "scale(0.96)"
+      : isHovered
+      ? "translateY(-3px)"
+      : "none"
     : "none";
 
-  const boxShadow = isHovered || isPressed ? theme.shadow : theme.shadow;
+  const boxShadow = isMobile ? "none" : theme.shadow;
 
   return (
     <div
@@ -201,7 +203,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
         <span>{dateLabel}</span>
       </div>
 
-      {/* Location (fixed-height so cards line up) */}
+      {/* Location (fixed height so cards line up) */}
       <div
         style={{
           fontSize: "14px",
@@ -255,8 +257,7 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
           gap: "4px",
         }}
       >
-        {/* Big, bright temp – very visible on mobile */}
-        {mainTemp !== undefined ? (
+        {mainTemp !== undefined && (
           <div
             style={{
               fontSize: "32px",
@@ -266,17 +267,6 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
             }}
           >
             {Math.round(mainTemp)}°
-          </div>
-        ) : (
-          // last-resort fallback so it's never totally blank
-          <div
-            style={{
-              fontSize: "18px",
-              fontWeight: 600,
-              opacity: 0.8,
-            }}
-          >
-            --°
           </div>
         )}
 
@@ -306,24 +296,11 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
             Chance of rain: {Math.round(day.rainChance)}%
           </div>
         )}
-
-        {/* DEBUG LINE – you can delete this once things look right */}
-        <div
-          style={{
-            marginTop: "4px",
-            fontSize: "9px",
-            color: "rgba(248,250,252,0.7)",
-            opacity: 0.7,
-          }}
-        >
-          {`debug hi=${String(day.high)} (${typeof day.high}), lo=${String(
-            day.low
-          )} (${typeof day.low})`}
-        </div>
       </div>
     </div>
   );
 };
+
 
 export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
   const [isMobile, setIsMobile] = useState<boolean>(() => {

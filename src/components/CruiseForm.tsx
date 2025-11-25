@@ -152,28 +152,31 @@ export default function CruiseForm({ onSubmit }: CruiseFormProps) {
     <form onSubmit={handleSubmit}>
       {/* Cruise line */}
       <label
-        style={{
-          display: "block",
-          fontSize: "12px",
-          fontWeight: 600,
-          marginBottom: "4px",
-          color: "#374151",
-        }}
-      >
-        Cruise Line
-      </label>
+  style={{
+    display: "block",
+    fontSize: "14px",
+    fontWeight: 600,
+    marginBottom: "4px",
+    color: "#374151",
+  }}
+>
+  Cruise Line
+</label>
+
       <select
-        value={selectedLineId}
-        onChange={handleLineChange}
-        style={{
-          width: "100%",
-          fontSize: "13px",
-          padding: "8px 10px",
-          borderRadius: "8px",
-          border: "1px solid #d1d5db",
-          marginBottom: "10px",
-        }}
-      >
+  value={selectedLineId}
+  onChange={handleLineChange}
+  style={{
+    width: "100%",
+    fontSize: "15px",      // 👈 was 13px
+    padding: "8px 10px",
+    borderRadius: "8px",
+    border: "1px solid #d1d5db",
+    marginBottom: "10px",
+    backgroundColor: "white",
+  }}
+>
+
         <option value="">Please Select One</option>
         {lines.map((line) => (
           <option key={line.id} value={line.id}>
@@ -186,7 +189,7 @@ export default function CruiseForm({ onSubmit }: CruiseFormProps) {
       <label
         style={{
           display: "block",
-          fontSize: "12px",
+          fontSize: "15px",
           fontWeight: 600,
           marginBottom: "4px",
           color: "#374151",
@@ -195,19 +198,20 @@ export default function CruiseForm({ onSubmit }: CruiseFormProps) {
         Ship
       </label>
       <select
-        value={selectedShipId}
-        onChange={handleShipChange}
-        disabled={!selectedLineId}
-        style={{
-          width: "100%",
-          fontSize: "13px",
-          padding: "8px 10px",
-          borderRadius: "8px",
-          border: "1px solid #d1d5db",
-          marginBottom: "10px",
-          backgroundColor: !selectedLineId ? "#f9fafb" : "white",
-        }}
-      >
+  value={selectedShipId}
+  onChange={handleShipChange}
+  disabled={!selectedLineId}
+  style={{
+    width: "100%",
+    fontSize: "15px",      // 👈 was 13px
+    padding: "8px 10px",
+    borderRadius: "8px",
+    border: "1px solid #d1d5db",
+    marginBottom: "10px",
+    backgroundColor: !selectedLineId ? "#f9fafb" : "white",
+  }}
+>
+
         <option value="">Please Select One</option>
         {shipsForLine.map((ship) => (
           <option key={ship.id} value={ship.id}>
