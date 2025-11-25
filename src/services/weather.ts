@@ -124,7 +124,11 @@ async function getNceiMonthlyNormalsForStation(
       | NceiMonthlyNormalRow;
     const rows = Array.isArray(json) ? json : [json];
     nceiNormalsCache[stationId] = rows;
-    console.log("[NCEI] Loaded normals rows:", rows.length);
+    console.log(
+      "[NCEI] Loaded normals rows:",
+      rows.length,
+      rows[0] ? Object.keys(rows[0]) : "(no keys)"
+    );
     return rows;
   } catch (err) {
     console.error("[NCEI] Failed to parse proxy JSON:", err, text.slice(0, 200));
@@ -189,13 +193,25 @@ async function fillMissingWithClimatology(
     return existing;
   }
 
+  // Build a map month -> row.
   const normalsByMonth = new Map<number, NceiMonthlyNormalRow>();
   for (const row of normals) {
     const m = getMonthFromNormalRow(row);
     if (m != null) {
-      // last one wins if duplicates, which is fine here
       normalsByMonth.set(m, row);
     }
+  }
+
+  // 🔥 Fallback: if we couldn't detect month fields at all,
+  // assume rows are in Jan..Dec order and map by index.
+  if (normalsByMonth.size === 0) {
+    console.warn(
+      "[NCEI] Could not infer months from DATE/MONTH fields; falling back to index-based month mapping."
+    );
+    normals.forEach((row, idx) => {
+      const monthIndex = idx + 1; // 1..12
+      normalsByMonth.set(monthIndex, row);
+    });
   }
 
   for (const iso of missingDates) {
@@ -244,7 +260,7 @@ async function fillMissingWithClimatology(
     existing[iso] = {
       high,
       low,
-      rainChance: rainChance,
+      rainChance,
       icon: "partly",
       description: `Typical conditions for this time of year (30-year average). High ~${Math.round(
         high
