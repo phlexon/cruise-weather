@@ -10,7 +10,7 @@ export type DailyForecast = {
   rainChance: number;    // % chance of precipitation
   icon: WeatherIcon;     // simplified icon code for UI
   description: string;   // human-readable description
-  source: WeatherSource; // "forecast" (Tomorrow.io) or "climatology" (NCEI)
+  source: WeatherSource; // "forecast" (Tomorrow.io) or "climatology" (NCEI/approx)
 };
 
 export type ForecastOptions = {
@@ -202,7 +202,7 @@ async function fillMissingWithClimatology(
     }
   }
 
-  // 🔥 Fallback: if we couldn't detect month fields at all,
+  // Fallback: if we couldn't detect months from DATE/MONTH fields,
   // assume rows are in Jan..Dec order and map by index.
   if (normalsByMonth.size === 0) {
     console.warn(
@@ -384,13 +384,13 @@ export async function getDailyForecastsForCity(
 
   // If some dates are missing AND we have a station ID, fill with climatology
   if (options?.nceiStationId) {
-    const merged = await fillMissingWithClimatology(
+    let merged = await fillMissingWithClimatology(
       dates,
       byDate,
       options.nceiStationId
     );
 
-    const finalMissing = dates.filter((d) => !merged[d]);
+    let finalMissing = dates.filter((d) => !merged[d]);
     console.log("[Weather] After climatology fill:", {
       city,
       stationId: options.nceiStationId,
@@ -398,13 +398,50 @@ export async function getDailyForecastsForCity(
       keysAfterFill: Object.keys(merged),
     });
 
-    if (finalMissing.length === dates.length) {
-      const available = Object.keys(merged);
-      throw new Error(
-        `No matching forecast or climatology dates. Requested: ${dates.join(
-          ", "
-        )} — Available: ${available.join(", ") || "none"}`
-      );
+    // 🔥 LAST-RESORT FALLBACK:
+    // If some dates are STILL missing, approximate them from the nearest
+    // available day so the UI always has a high/low to show.
+    if (finalMissing.length > 0) {
+      const availableKeys = Object.keys(merged).sort();
+      if (availableKeys.length > 0) {
+        for (const iso of finalMissing) {
+          const targetTime = new Date(iso).getTime();
+          if (Number.isNaN(targetTime)) continue;
+
+          let bestKey = availableKeys[0];
+          let bestDiff = Math.abs(
+            new Date(availableKeys[0]).getTime() - targetTime
+          );
+
+          for (let i = 1; i < availableKeys.length; i++) {
+            const k = availableKeys[i];
+            const diff = Math.abs(new Date(k).getTime() - targetTime);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              bestKey = k;
+            }
+          }
+
+          const base = merged[bestKey];
+          if (!base) continue;
+
+          merged[iso] = {
+            ...base,
+            source: "climatology",
+            description:
+              base.source === "climatology"
+                ? base.description
+                : "Approximate conditions based on nearby days (used when detailed climatology is unavailable).",
+          };
+        }
+
+        console.log("[Weather] Filled remaining missing by nearest neighbor:", {
+          finalMissingBefore: finalMissing,
+          keysAfterApprox: Object.keys(merged),
+        });
+
+        finalMissing = [];
+      }
     }
 
     forecastCache[cacheKey] = merged;
