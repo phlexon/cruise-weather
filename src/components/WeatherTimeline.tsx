@@ -17,15 +17,22 @@ type WeatherTimelineProps = {
   itinerary: ItineraryDay[];
 };
 
+function getIsMobile() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
 export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
   const [page, setPage] = useState(0);
-  const [isMobile, setIsMobile] = useState<boolean>(
-    typeof window !== "undefined" ? window.innerWidth < 768 : false
-  );
+  const [isMobile, setIsMobile] = useState<boolean>(getIsMobile);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onResize = () => setIsMobile(window.innerWidth < 768);
+
+    const onResize = () => {
+      setIsMobile(getIsMobile());
+    };
+
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -112,76 +119,36 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
         gap: "0.75rem",
       }}
     >
+      {/* Wrapper: arrows on left/right (desktop), just cards (mobile) */}
       <div
         style={{
           display: "flex",
-          gap: isMobile ? "0.75rem" : "1rem",
           alignItems: "stretch",
+          gap: isMobile ? "0.75rem" : "0.75rem",
         }}
       >
-        {/* Left nav column – desktop only */}
+        {/* Left arrow – desktop only */}
         {!isMobile && totalPages > 1 && (
-          <div
+          <button
+            type="button"
+            onClick={handlePrev}
+            disabled={page === 0}
             style={{
-              width: "80px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.75rem",
+              width: 40,
+              height: 40,
+              alignSelf: "center",
+              borderRadius: "999px",
+              border: "none",
+              background:
+                page === 0 ? "rgba(148, 163, 184, 0.25)" : "#e5e7eb",
+              color: "#6b7280",
+              fontSize: "1rem",
+              cursor: page === 0 ? "default" : "pointer",
               flexShrink: 0,
             }}
           >
-            <button
-              type="button"
-              onClick={handlePrev}
-              disabled={page === 0}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "999px",
-                border: "none",
-                background:
-                  page === 0 ? "rgba(148, 163, 184, 0.25)" : "#e5e7eb",
-                color: "#6b7280",
-                fontSize: "1rem",
-                cursor: page === 0 ? "default" : "pointer",
-              }}
-            >
-              ◀
-            </button>
-
-            <div
-              style={{
-                fontSize: "0.8rem",
-                color: "#4b5563",
-              }}
-            >
-              {page + 1}
-              <span style={{ opacity: 0.6 }}> / {totalPages}</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={page >= totalPages - 1}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "999px",
-                border: "none",
-                background:
-                  page >= totalPages - 1
-                    ? "rgba(148, 163, 184, 0.25)"
-                    : "#111827",
-                color: "#f9fafb",
-                fontSize: "1rem",
-                cursor: page >= totalPages - 1 ? "default" : "pointer",
-              }}
-            >
-              ▶
-            </button>
-          </div>
+            ◀
+          </button>
         )}
 
         {/* Cards container */}
@@ -190,6 +157,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
             flex: 1,
             display: "flex",
             flexDirection: "row",
+            flexWrap: "nowrap",
             gap: "0.9rem",
             alignItems: "stretch",
             overflowX: isMobile ? "auto" : "visible",
@@ -228,7 +196,7 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
                 key={day.day}
                 style={{
                   flex: isMobile ? "0 0 78%" : 1,
-                  minWidth: 0,
+                  minWidth: isMobile ? "78%" : 0,
                   borderRadius: "26px",
                   padding: "0.9rem 1.05rem 0.95rem",
                   background: cardBackground,
@@ -404,7 +372,47 @@ export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
             );
           })}
         </div>
+
+        {/* Right arrow – desktop only */}
+        {!isMobile && totalPages > 1 && (
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={page >= totalPages - 1}
+            style={{
+              width: 40,
+              height: 40,
+              alignSelf: "center",
+              borderRadius: "999px",
+              border: "none",
+              background:
+                page >= totalPages - 1
+                  ? "rgba(148, 163, 184, 0.25)"
+                  : "#111827",
+              color: "#f9fafb",
+              fontSize: "1rem",
+              cursor: page >= totalPages - 1 ? "default" : "pointer",
+              flexShrink: 0,
+            }}
+          >
+            ▶
+          </button>
+        )}
       </div>
+
+      {/* Desktop: small page indicator under cards */}
+      {!isMobile && totalPages > 1 && (
+        <div
+          style={{
+            marginTop: "0.25rem",
+            fontSize: "0.78rem",
+            color: "#6b7280",
+            textAlign: "center",
+          }}
+        >
+          Page {page + 1} of {totalPages}
+        </div>
+      )}
     </div>
   );
 }
