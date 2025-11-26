@@ -10,17 +10,15 @@ const Spinner: React.FC<SpinnerProps> = ({ message }) => {
     <div className="cc-spinner-overlay">
       <div className="cc-spinner-card">
         <div className="cc-spinner-icon-wrapper">
-          {/* Outer spinning ring */}
-          <div className="cc-spinner-ring" />
-          {/* Inner dot */}
-          <div className="cc-spinner-dot" />
+          {/* Use custom SVG spinner from public/icons */}
+          <img
+            src="/icons/spinner.svg"
+            alt="Loading…"
+            className="cc-spinner-svg"
+          />
         </div>
 
-        {message && (
-          <div className="cc-spinner-text">
-            {message}
-          </div>
-        )}
+        {message && <div className="cc-spinner-text">{message}</div>}
       </div>
     </div>
   );

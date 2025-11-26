@@ -1,6 +1,7 @@
 // src/screens/HomeScreen.tsx
 import React from "react";
 import "./HomeScreen.css";
+import HomeLogo from "../components/HomeLogo";
 
 type HomeScreenProps = {
   onFindCruise: () => void;
@@ -13,6 +14,7 @@ export default function HomeScreen({ onFindCruise, onLogin }: HomeScreenProps) {
       <div className="cc-home-inner">
         <header className="cc-home-header">
           <span className="cc-home-welcome">WELCOME TO</span>
+
           <img
             src="/icons/logo.svg"
             alt="CruiseCast"
@@ -20,17 +22,17 @@ export default function HomeScreen({ onFindCruise, onLogin }: HomeScreenProps) {
           />
         </header>
 
+        {/* 🔆 Our animated sun + clouds icon */}
         <div className="cc-hero-wrapper">
-          <img
-            src="/icons/partly.svg"
-            alt="Partly cloudy"
-            className="cc-hero-icon"
-          />
+          <HomeLogo />
         </div>
 
+        {/* Action buttons */}
         <div className="cc-home-actions">
-          {/* 🔗 THIS BUTTON SWITCHES YOU INTO THE MAIN APP */}
-          <button className="cc-cta cc-cta--border" onClick={onFindCruise}>
+          <button
+            className="cc-cta cc-cta--border"
+            onClick={onFindCruise}
+          >
             <span className="cc-cta-label">FIND MY CRUISE</span>
             <span className="cc-cta-icon">▶</span>
           </button>
