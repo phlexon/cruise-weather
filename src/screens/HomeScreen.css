@@ -47,16 +47,15 @@
 /* Logo image size + centering */
 .cc-home-logo-image {
   display: block;
-  width: min(340px, 80vw);  /* big, but never wider than mobile screen */
-  height: auto;
+  width: 100% !important;
+  max-width: 420px !important;   /* adjust this to how big you want it */
+  height: auto !important;
 }
 
 
 
 .cc-home-logo-image {
-  height: 42px; /* tweak to match your logo proportions */
-  width: auto;
-  display: block;
+  max-width: 480px !important;
 }
 
 /* Hero icon */
@@ -147,7 +146,7 @@
   }
 
   .cc-home-logo-image {
-    height: 36px;
+    max-width: 90vw !important;
   }
 
   .cc-hero-icon {
