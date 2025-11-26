@@ -34,7 +34,6 @@ export default function CruiseForm({ onSubmit }: CruiseFormProps) {
   const [loadingCalendar, setLoadingCalendar] = useState(false);
 
   // --- Load cruise lines + ships from Apify -----------------------
-
   useEffect(() => {
     let cancelled = false;
 
@@ -149,161 +148,113 @@ export default function CruiseForm({ onSubmit }: CruiseFormProps) {
     !!selectedLineId && !!selectedShipId && !!sailDate && !loadingOptions;
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="cc-form">
       {/* Cruise line */}
-      <label
-  style={{
-    display: "block",
-    fontSize: "14px",
-    fontWeight: 600,
-    marginBottom: "4px",
-    color: "#374151",
-  }}
->
-  Cruise Line
-</label>
-
-      <select
-  value={selectedLineId}
-  onChange={handleLineChange}
-  style={{
-    width: "100%",
-    fontSize: "15px",      // 👈 was 13px
-    padding: "8px 10px",
-    borderRadius: "8px",
-    border: "1px solid #d1d5db",
-    marginBottom: "10px",
-    backgroundColor: "white",
-  }}
->
-
-        <option value="">Please Select One</option>
-        {lines.map((line) => (
-          <option key={line.id} value={line.id}>
-            {line.name}
-          </option>
-        ))}
-      </select>
+      <div className="cc-field-group">
+        <label htmlFor="cc-line-select" className="cc-field-label">
+          Cruise Line
+        </label>
+        <select
+          id="cc-line-select"
+          value={selectedLineId}
+          onChange={handleLineChange}
+          className="cc-select"
+          disabled={loadingOptions}
+        >
+          <option value="">Please Select One</option>
+          {lines.map((line) => (
+            <option key={line.id} value={line.id}>
+              {line.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Ship */}
-      <label
-        style={{
-          display: "block",
-          fontSize: "15px",
-          fontWeight: 600,
-          marginBottom: "4px",
-          color: "#374151",
-        }}
-      >
-        Ship
-      </label>
-      <select
-  value={selectedShipId}
-  onChange={handleShipChange}
-  disabled={!selectedLineId}
-  style={{
-    width: "100%",
-    fontSize: "15px",      // 👈 was 13px
-    padding: "8px 10px",
-    borderRadius: "8px",
-    border: "1px solid #d1d5db",
-    marginBottom: "10px",
-    backgroundColor: !selectedLineId ? "#f9fafb" : "white",
-  }}
->
-
-        <option value="">Please Select One</option>
-        {shipsForLine.map((ship) => (
-          <option key={ship.id} value={ship.id}>
-            {ship.name}
-          </option>
-        ))}
-      </select>
+      <div className="cc-field-group">
+        <label htmlFor="cc-ship-select" className="cc-field-label">
+          Ship
+        </label>
+        <select
+          id="cc-ship-select"
+          value={selectedShipId}
+          onChange={handleShipChange}
+          disabled={!selectedLineId || loadingOptions}
+          className="cc-select"
+        >
+          <option value="">Please Select One</option>
+          {shipsForLine.map((ship) => (
+            <option key={ship.id} value={ship.id}>
+              {ship.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Calendar of sailings (only after ship is chosen) */}
       {selectedShipId && (
-        <div style={{ marginBottom: "12px" }}>
-          {loadingCalendar ? (
-            <div
-              style={{
-                fontSize: "11px",
-                color: "#6b7280",
-                marginTop: "4px",
-              }}
-            >
-              Loading upcoming sailings…
-            </div>
-          ) : calendarSailings.length ? (
-            <SailingsCalendar
-              sailings={calendarSailings}
-              selectedDate={sailDate}
-              onSelectDate={handleCalendarSelect}
-            />
-          ) : (
-            <div
-              style={{
-                marginTop: "4px",
-                fontSize: "11px",
-                color: "#6b7280",
-                fontStyle: "italic",
-              }}
-            >
-              No sailings found for this ship in the dataset.
-            </div>
-          )}
+        <div className="cc-field-group">
+          <span className="cc-field-label">Sail Date</span>
+          <div className="cc-calendar-shell">
+            {loadingCalendar ? (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#6b7280",
+                }}
+              >
+                Loading upcoming sailings…
+              </div>
+            ) : calendarSailings.length ? (
+              <SailingsCalendar
+                sailings={calendarSailings}
+                selectedDate={sailDate}
+                onSelectDate={handleCalendarSelect}
+              />
+            ) : (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#6b7280",
+                  fontStyle: "italic",
+                }}
+              >
+                No sailings found for this ship in the dataset.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Fallback manual date picker & button */}
-      <label
-        style={{
-          display: "block",
-          fontSize: "12px",
-          fontWeight: 600,
-          marginBottom: "4px",
-          color: "#374151",
-        }}
-      >
-        Sail Date
-      </label>
-      <input
-        type="date"
-        value={sailDate}
-        onChange={handleSailDateChange}
-        style={{
-          width: "100%",
-          fontSize: "13px",
-          padding: "8px 10px",
-          borderRadius: "8px",
-          border: "1px solid #d1d5db",
-          marginBottom: "12px",
-        }}
-      />
+      <div className="cc-field-group">
+        <label htmlFor="cc-sail-date" className="cc-field-label">
+          Sail Date (manual)
+        </label>
+        <input
+          id="cc-sail-date"
+          type="date"
+          value={sailDate}
+          onChange={handleSailDateChange}
+          className="cc-input-date"
+        />
+      </div>
 
-      <button
-        type="submit"
-        disabled={!canSearch}
-        style={{
-          width: "100%",
-          marginTop: "4px",
-          padding: "10px 12px",
-          borderRadius: "999px",
-          border: "none",
-          backgroundColor: canSearch ? "#2563eb" : "#9ca3af",
-          color: "white",
-          fontSize: "14px",
-          fontWeight: 600,
-          cursor: canSearch ? "pointer" : "default",
-        }}
-      >
-        Search Cruise
-      </button>
+      <div className="cc-cta-row">
+        <button
+          type="submit"
+          disabled={!canSearch}
+          className="cc-cta-button cc-cta-button--primary cc-cta-button--full"
+        >
+          Find My Cruise
+        </button>
+      </div>
 
       {optionsError && (
         <p
           style={{
             marginTop: "6px",
-            fontSize: "11px",
+            fontSize: "0.8rem",
             color: "#b91c1c",
           }}
         >

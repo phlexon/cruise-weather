@@ -17,18 +17,19 @@ type WeatherTimelineProps = {
   itinerary: TimelineDay[];
 };
 
-// Avoid timezone shift by forcing a local-time date
-function formatDisplayDate(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso + "T12:00:00");
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, {
+function formatDisplayDate(date?: string): string {
+  if (!date) return "";
+
+  const parsed = new Date(date + "T00:00:00");
+  if (isNaN(parsed.getTime())) return "";
+
+  return parsed.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });
 }
 
-function getIconPath(icon?: TimelineDay["icon"]) {
+function getIconPath(icon?: TimelineDay["icon"]): string {
   switch (icon) {
     case "sunny":
       return "/icons/sunny.svg";
@@ -45,59 +46,39 @@ function getIconPath(icon?: TimelineDay["icon"]) {
 
 type WeatherTheme = {
   background: string;
-  shadow: string;
 };
 
 function getThemeForDay(day: TimelineDay): WeatherTheme {
-  // 1) Base theme from icon
-  let theme: WeatherTheme;
-
-  switch (day.icon) {
-    case "sunny":
-      theme = {
-        background: "linear-gradient(135deg, #06b6d4, #0ea5e9)",
-        shadow: "0 20px 40px rgba(15, 118, 178, 0.5)",
-      };
-      break;
-
-    case "partly":
-      theme = {
-        background: "linear-gradient(135deg, #f59e0b, #fbbf24)", // warm orange
-        shadow: "0 20px 40px rgba(245,158,11,0.5)",
-      };
-      break;
-
-    case "cloudy":
-      theme = {
-        background: "linear-gradient(135deg, #64748b, #0f172a)",
-        shadow: "0 20px 40px rgba(15, 23, 42, 0.55)",
-      };
-      break;
-
-    case "rain":
-      theme = {
-        background: "linear-gradient(135deg, #0f172a, #1d4ed8)",
-        shadow: "0 20px 40px rgba(30, 64, 175, 0.6)",
-      };
-      break;
-
-    default:
-      theme = {
-        background: "linear-gradient(135deg, #0ea5e9, #2563eb)",
-        shadow: "0 20px 40px rgba(37, 99, 235, 0.55)",
-      };
-      break;
-  }
-
-  // 2) Climatology days: soften the shadow a bit
+  // Climatology = warm, bright orange/yellow
   if (day.source === "climatology") {
     return {
-      background: theme.background,
-      shadow: "0 18px 36px rgba(15,23,42,0.45)",
+      background: "linear-gradient(135deg, #FFE7AA, #FFC970)", // soft warm day
     };
   }
 
-  return theme;
+  // Forecast = weather-driven colors
+  switch (day.icon) {
+    case "sunny":
+      return {
+        background: "linear-gradient(135deg, #06b6d4, #0ea5e9)",
+      };
+    case "partly":
+      return {
+        background: "linear-gradient(135deg, #f59e0b, #fbbf24)",
+      };
+    case "cloudy":
+      return {
+        background: "linear-gradient(135deg, #94a3b8, #64748b)",
+      };
+    case "rain":
+      return {
+        background: "linear-gradient(135deg, #60a5fa, #2563eb)",
+      };
+    default:
+      return {
+        background: "linear-gradient(135deg, #06b6d4, #3b82f6)",
+      };
+  }
 }
 
 const WeatherIcon: React.FC<{
@@ -110,10 +91,9 @@ const WeatherIcon: React.FC<{
       src={src}
       alt={alt}
       style={{
-        width: "76px",
-        height: "76px",
+        width: 72,
+        height: 72,
         flexShrink: 0,
-        filter: "drop-shadow(0 12px 20px rgba(0,0,0,0.35))",
       }}
     />
   );
@@ -123,14 +103,10 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
   day,
   isMobile,
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isPressed, setIsPressed] = useState(false);
-
   const theme = getThemeForDay(day);
   const dateLabel = formatDisplayDate(day.date);
   const isClimo = day.source === "climatology";
 
-  // Normalize temps so it works even if values come through as strings
   const normalizeTemp = (value: unknown): number | undefined => {
     if (value === null || value === undefined) return undefined;
     const n = Number(value);
@@ -141,386 +117,333 @@ const WeatherCard: React.FC<{ day: TimelineDay; isMobile: boolean }> = ({
   const low = normalizeTemp(day.low);
   const mainTemp = high ?? low;
 
+  const border = isClimo
+    ? "1px dashed rgba(120,85,20,0.8)"
+    : "1px solid rgba(255,255,255,0.85)";
+
+  const badgeLabel = isClimo
+    ? "30-Year Average · Not a Forecast"
+    : "Live Forecast";
+
+  const badgeBg = isClimo
+    ? "rgba(255,165,55,0.97)"
+    : "rgba(253,224,71,0.96)";
+
+  const badgeColor = "#1a1a1a";
+
   const baseStyle: React.CSSProperties = {
-    borderRadius: "24px",
-    padding: "16px 18px",
+    borderRadius: 22,
+    padding: "16px 18px 14px",
     background: theme.background,
-    boxShadow: isMobile ? "none" : theme.shadow, // 👈 no shadow on mobile
+    border,
+    boxShadow: "none",
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
+    alignItems: "stretch",
     textAlign: "center",
-    color: "white",
-    transition: "transform 0.15s ease, box-shadow 0.15s ease",
+    color: "#1a1a1a",
+    position: "relative",
+    transition: "transform 0.15s ease",
+    // wider cards – 3 per row on desktop, full-ish width on mobile
+    width: isMobile ? "85%" : "30%",
+    maxWidth: 420,
+    flex: "0 0 auto",
   };
 
-  if (isMobile) {
-    baseStyle.flex = "0 0 auto";
-    baseStyle.minWidth = "230px";
-    baseStyle.maxWidth = "270px";
-  } else {
-    baseStyle.flex = "1 1 0";
-    baseStyle.minWidth = 0;
-    baseStyle.cursor = "pointer";
-  }
-
-  const transform = !isMobile
-    ? isPressed
-      ? "scale(0.96)"
-      : isHovered
-      ? "translateY(-3px)"
-      : "none"
-    : "none";
-
-  const boxShadow = isMobile ? "none" : theme.shadow;
-
   return (
-    <div
-      style={{ ...baseStyle, transform, boxShadow }}
-      onMouseEnter={() => !isMobile && setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setIsPressed(false);
-      }}
-      onMouseDown={() => !isMobile && setIsPressed(true)}
-      onMouseUp={() => setIsPressed(false)}
-    >
-      {/* Day + date */}
+    <div style={baseStyle}>
+      {/* HEADER BLOCK (fixed height so icons line up) */}
       <div
         style={{
-          fontSize: "11px",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: "rgba(255,255,255,0.8)",
-          marginBottom: "4px",
           width: "100%",
+          minHeight: 110,
+          maxHeight: 110,
+          overflow: "hidden",
           display: "flex",
-          justifyContent: "space-between",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          marginBottom: 6,
         }}
       >
-        <span>Day {day.day}</span>
-        <span>{dateLabel}</span>
+        {/* Day number */}
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: "rgba(30,30,30,0.85)",
+            marginBottom: 2,
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          Day {day.day}
+        </div>
+
+        {/* Location (bigger, own line, up to 2 lines) */}
+        <div
+          style={{
+            fontSize: 20,
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "0.02em",
+            color: "#1a1a1a",
+            marginBottom: 4,
+            textAlign: "left",
+            width: "100%",
+            lineHeight: 1.2,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {day.location}
+        </div>
+
+        {/* Date (under location) */}
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: "rgba(30,30,30,0.7)",
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          {dateLabel}
+        </div>
       </div>
 
-      {/* Location (fixed height so cards line up) */}
+      {/* Badge */}
       <div
         style={{
-          fontSize: "14px",
-          fontWeight: 700,
-          marginBottom: isClimo ? "3px" : "8px",
-          color: "white",
-          lineHeight: 1.35,
-          minHeight: "56px",
+          fontSize: 10,
+          fontWeight: 800,
+          textTransform: "uppercase",
+          letterSpacing: "0.14em",
+          marginBottom: 10,
+          padding: "4px 12px",
+          borderRadius: 999,
+          background: badgeBg,
+          color: badgeColor,
+          alignSelf: "center",
+          minHeight: 24,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
-          padding: "0 4px",
         }}
       >
-        <span>{day.location}</span>
+        {badgeLabel}
       </div>
 
-      {/* Climatology badge */}
-      {isClimo && (
-        <div
-          style={{
-            fontSize: "9px",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            color: "rgba(226,232,240,0.9)",
-            marginBottom: "6px",
-          }}
-        >
-          30-Year Average (Not a Forecast)
-        </div>
-      )}
-
-      {/* Icon */}
+      {/* Icon row (same height in every card) */}
       <div
         style={{
-          marginTop: isClimo ? "4px" : "2px",
-          marginBottom: "8px",
+          marginBottom: 8,
+          minHeight: 80,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
         <WeatherIcon icon={day.icon} alt={day.description || "Weather icon"} />
       </div>
 
-      {/* Main temperature + details */}
+      {/* Temps + rain row */}
       <div
         style={{
+          width: "100%",
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "4px",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          marginBottom: 8,
+          minHeight: 56,
         }}
       >
-        {mainTemp !== undefined && (
-          <div
-            style={{
-              fontSize: "32px",
-              fontWeight: 800,
-              lineHeight: 1,
-              textShadow: "0 2px 6px rgba(0,0,0,0.45)",
-            }}
-          >
-            {Math.round(mainTemp)}°
-          </div>
-        )}
+        {/* Temps */}
+        <div style={{ textAlign: "left" }}>
+          {mainTemp !== undefined && (
+            <div
+              style={{
+                fontSize: 34,
+                fontWeight: 800,
+                color: "#1a1a1a",
+                marginBottom: 2,
+              }}
+            >
+              {Math.round(mainTemp)}°
+            </div>
+          )}
 
-        {(high !== undefined || low !== undefined) && (
-          <div
-            style={{
-              fontSize: "11px",
-              fontWeight: 500,
-              color: "rgba(241,245,249,0.95)",
-            }}
-          >
-            {high !== undefined && `High ${Math.round(high)}°`}
-            {high !== undefined && low !== undefined ? " · " : ""}
-            {low !== undefined && `Low ${Math.round(low)}°`}
-          </div>
-        )}
+          {(high !== undefined || low !== undefined) && (
+            <div
+              style={{
+                fontSize: 12,
+                color: "rgba(28,28,28,0.8)",
+              }}
+            >
+              {high !== undefined && <span>High: {Math.round(high)}°</span>}
+              <br />
+              {low !== undefined && <span>Low: {Math.round(low)}°</span>}
+            </div>
+          )}
+        </div>
 
-        {typeof day.rainChance === "number" && (
+        {/* Rain */}
+        {day.rainChance !== undefined && (
           <div
             style={{
-              fontSize: "10px",
-              fontWeight: 400,
-              color: "rgba(226,232,240,0.9)",
-              marginTop: "2px",
+              textAlign: "right",
+              fontSize: 12,
+              color: "rgba(28,28,28,0.85)",
             }}
           >
-            Chance of rain: {Math.round(day.rainChance)}%
+            Rain: {Math.round(day.rainChance)}%
           </div>
         )}
       </div>
+
+      {/* Description aligned bottom */}
+      {day.description && (
+        <div
+          style={{
+            fontSize: 11,
+            lineHeight: 1.4,
+            color: "rgba(30,30,30,0.9)",
+            width: "100%",
+            textAlign: "left",
+            minHeight: 40,
+          }}
+        >
+          {day.description}
+        </div>
+      )}
     </div>
   );
 };
 
-
 export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
-  const [isMobile, setIsMobile] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    return window.innerWidth < 768;
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  if (!itinerary || itinerary.length === 0) {
-    return <p style={{ fontSize: "12px" }}>No itinerary available.</p>;
-  }
-
-  const embarkationCity =
-    itinerary[0]?.location.split(",")[0] ?? "departure port";
-
-  // Desktop pagination (3 cards at a time)
-  const CARDS_PER_PAGE = 3;
-  const [page, setPage] = useState(0);
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(itinerary.length / CARDS_PER_PAGE)),
-    [itinerary.length]
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
 
   useEffect(() => {
-    setPage(0);
-  }, [itinerary.length]);
+    if (typeof window === "undefined") return;
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
-  const canGoPrev = !isMobile && page > 0;
-  const canGoNext = !isMobile && page < totalPages - 1;
+  // 3 cards per page
+  const pages = useMemo(() => {
+    const chunkSize = 3;
+    const result: TimelineDay[][] = [];
 
-  const desktopSlice = useMemo(() => {
-    if (isMobile) return itinerary;
-    const start = page * CARDS_PER_PAGE;
-    return itinerary.slice(start, start + CARDS_PER_PAGE);
-  }, [isMobile, itinerary, page]);
+    for (let i = 0; i < itinerary.length; i += chunkSize) {
+      result.push(itinerary.slice(i, i + chunkSize));
+    }
 
-  // Arrow click animation state
-  const [prevPressed, setPrevPressed] = useState(false);
-  const [nextPressed, setNextPressed] = useState(false);
+    return result;
+  }, [itinerary]);
+
+  const [pageIndex, setPageIndex] = useState(0);
+  const currentPage = pages[pageIndex] ?? [];
+
+  const canPrev = pageIndex > 0;
+  const canNext = pageIndex < pages.length - 1;
+
+  if (!itinerary || itinerary.length === 0) return null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-      }}
-    >
-      {/* MAIN TIMELINE */}
-      {isMobile ? (
-        // Mobile: horizontal scroll, NO gradients
-        <div
-          style={{
-            margin: "0 -6px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              overflowX: "auto",
-              paddingBottom: "6px",
-              paddingLeft: "6px",
-              paddingRight: "6px",
-              gap: "12px",
-              scrollSnapType: "x mandatory",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {itinerary.map((day) => (
-              <WeatherCard key={day.day} day={day} isMobile={true} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        // Desktop: 3 cards + arrow nav
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              if (canGoPrev) {
-                setPage((p) => Math.max(0, p - 1));
-              }
-            }}
-            onMouseDown={() => canGoPrev && setPrevPressed(true)}
-            onMouseUp={() => setPrevPressed(false)}
-            onMouseLeave={() => setPrevPressed(false)}
-            disabled={!canGoPrev}
-            style={{
-              borderRadius: "999px",
-              border: "1px solid rgba(148,163,184,0.8)",
-              backgroundColor: canGoPrev ? "white" : "#e5e7eb",
-              width: "32px",
-              height: "32px",
-              cursor: canGoPrev ? "pointer" : "default",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              transition: "transform 0.15s ease, background-color 0.15s ease",
-              transform: prevPressed ? "scale(0.9)" : "scale(1)",
-            }}
-          >
-            <img
-              src="/icons/arrow.svg"
-              alt="Previous days"
-              style={{
-                width: "16px",
-                height: "16px",
-                transform: "rotate(180deg)",
-                opacity: canGoPrev ? 1 : 0.6,
-              }}
-            />
-          </button>
-
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              gap: "12px",
-              paddingBottom: "25px", // extra room for shadows
-            }}
-          >
-            {desktopSlice.map((day) => (
-              <WeatherCard key={day.day} day={day} isMobile={false} />
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (canGoNext) {
-                setPage((p) => Math.min(totalPages - 1, p + 1));
-              }
-            }}
-            onMouseDown={() => canGoNext && setNextPressed(true)}
-            onMouseUp={() => setNextPressed(false)}
-            onMouseLeave={() => setNextPressed(false)}
-            disabled={!canGoNext}
-            style={{
-              borderRadius: "999px",
-              border: "1px solid rgba(148,163,184,0.8)",
-              backgroundColor: canGoNext ? "white" : "#e5e7eb",
-              width: "32px",
-              height: "32px",
-              cursor: canGoNext ? "pointer" : "default",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              transition: "transform 0.15s ease, background-color 0.15s ease",
-              transform: nextPressed ? "scale(0.9)" : "scale(1)",
-            }}
-          >
-            <img
-              src="/icons/arrow.svg"
-              alt="Next days"
-              style={{
-                width: "16px",
-                height: "16px",
-                opacity: canGoNext ? 1 : 0.6,
-              }}
-            />
-          </button>
-        </div>
-      )}
-
-      {/* FOOTER TEXT */}
+    <div style={{ width: "100%" }}>
       <div
         style={{
-          marginTop: "4px",
-          fontSize: "10px",
-          color: "#6b7280",
-          borderTop: "1px dashed rgba(148,163,184,0.7)",
-          paddingTop: "6px",
+          display: "flex",
+          gap: 10,
+          alignItems: "stretch",
         }}
       >
+        {/* Prev (desktop only) */}
+        {!isMobile && (
+          <button
+            onClick={() => canPrev && setPageIndex((p) => p - 1)}
+            disabled={!canPrev}
+            style={{
+              width: 34,
+              borderRadius: 999,
+              border: "none",
+              background: "rgba(255,255,255,0.6)",
+              color: "#1a1a1a",
+              cursor: canPrev ? "pointer" : "default",
+            }}
+          >
+            ‹
+          </button>
+        )}
+
+        {/* Cards */}
         <div
           style={{
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            fontWeight: 600,
-            marginBottom: "2px",
+            flex: 1,
+            overflowX: isMobile ? "auto" : "visible",
+            paddingBottom: isMobile ? 4 : 0,
           }}
         >
-          Daily itinerary &amp; weather
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              justifyContent: isMobile ? "flex-start" : "center",
+              alignItems: "stretch",
+            }}
+          >
+            {currentPage.map((day) => (
+              <WeatherCard key={day.day} day={day} isMobile={isMobile} />
+            ))}
+          </div>
         </div>
-        <div
-          style={{
-            marginBottom: "2px",
-            fontWeight: 400,
-          }}
-        >
-          Weather uses forecast (and historical climate normals when forecast
-          isn&apos;t available) for {embarkationCity}.
-        </div>
-        <div
-          style={{
-            fontSize: "9px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          Live forecast shown when available · 30-year averages fill missing
-          days
-        </div>
+
+        {/* Next (desktop only) */}
+        {!isMobile && (
+          <button
+            onClick={() => canNext && setPageIndex((p) => p + 1)}
+            disabled={!canNext}
+            style={{
+              width: 34,
+              borderRadius: 999,
+              border: "none",
+              background: "rgba(255,255,255,0.6)",
+              color: "#1a1a1a",
+              cursor: canNext ? "pointer" : "default",
+            }}
+          >
+            ›
+          </button>
+        )}
+      </div>
+
+      {/* Page dots */}
+      <div
+        style={{
+          marginTop: 8,
+          display: "flex",
+          justifyContent: "center",
+          gap: 6,
+        }}
+      >
+        {pages.map((_, idx) => (
+          <div
+            key={idx}
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 999,
+              backgroundColor:
+                idx === pageIndex ? "#1a1a1a" : "rgba(28,28,28,0.3)",
+            }}
+          />
+        ))}
       </div>
     </div>
   );

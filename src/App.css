@@ -1,68 +1,459 @@
 /* src/App.css */
-/* Empty or minimal overrides – Tailwind handles the layout */
 
-#root {
+/* Whole app view (matches home gradient + Jost) */
+.cc-app {
+  min-height: 100vh;
   margin: 0;
-  padding: 0;
-  max-width: none;
-  text-align: initial;
+  padding: 2.5rem 1.5rem;
+  background: linear-gradient(to bottom, #214a7e 0%, #1f7ece 45%, #f4d7a1 100%);
+  display: flex;
+  flex-direction: column;
+  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Overall padding tweaks */
-.app-shell {
-  padding: 1.5rem 1rem;
+/* HEADER */
+.cc-app-header {
+  max-width: 1040px;
+  margin: 0 auto 2rem auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.9rem;
+  color: #ffffff;
 }
 
-/* Main cards on mobile */
-.main-card {
-  padding: 16px 14px 20px;
+.cc-app-logo {
+  height: 52px;
+  object-fit: contain;
 }
 
-.results-card {
-  padding: 12px 14px;
+.cc-app-tagline {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
-/* Center header + tagline on mobile */
-.cc-header {
+.cc-app-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  opacity: 0.92;
+  max-width: 620px;
+}
+
+/* MAIN LAYOUT */
+.cc-app-main {
+  flex: 1;
+  display: flex;
   justify-content: center;
-  text-align: center;
+  align-items: flex-start;
 }
 
-.cc-logo {
-  margin: 0 auto;
-  display: block;
-}
-
-.cc-tagline {
-  text-align: center;
+.cc-app-main-inner {
   width: 100%;
+  max-width: 1040px;
 }
 
-/* Desktop: restore spacing + left/right layout */
-@media (min-width: 768px) {
-  .app-shell {
-    padding: 2.5rem 1.5rem;
+/* MAIN CARD (form + timeline) */
+.cc-main-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 20px;
+  padding: 22px 22px 26px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.cc-main-title {
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 0 0 16px 0;
+  color: #324a6d;
+}
+
+/* Helper text / status text */
+.cc-main-status {
+  margin-top: 10px;
+  font-size: 12px;
+  text-align: center;
+  color: #324a6d;
+}
+
+.cc-main-error {
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+/* Itinerary + explanation */
+.cc-itinerary-wrapper {
+  margin-top: 22px;
+  color: #324a6d;
+}
+
+.cc-weather-panel {
+  margin-top: 10px;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.96);
+  padding: 10px;
+}
+
+.cc-cruise-summary {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.cc-cruise-summary-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* Empty state copy */
+.cc-empty-title {
+  font-size: 18px;
+  margin: 0 0 6px 0;
+  font-weight: 600;
+}
+
+.cc-empty-text {
+  font-size: 13px;
+  margin: 0 0 6px 0;
+  opacity: 0.9;
+}
+
+.cc-empty-tip {
+  font-size: 11px;
+  margin: 0;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* RESULTS CARD */
+.cc-results-card {
+  margin-top: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.cc-results-title {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #324a6d;
+  margin: 0 0 10px 0;
+}
+
+/* “No results” notice */
+.cc-results-empty {
+  margin-top: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  color: #374151;
+}
+
+/* FOOTER */
+.cc-app-footer {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Small-screen tweaks */
+@media (max-width: 768px) {
+  .cc-app {
+    padding: 1.75rem 1.25rem 2rem;
   }
 
-  .main-card {
-    padding: 24px 24px 28px;
+  .cc-main-card {
+    padding: 18px 16px 22px;
   }
 
-  .results-card {
-    padding: 16px 20px;
-  }
-
-  .cc-header {
-    justify-content: space-between;
-    text-align: left;
-  }
-
-  .cc-logo {
-    margin: 0;
-  }
-
-  .cc-tagline {
-    text-align: right;
-    width: auto;
+  .cc-main-title {
+    text-align: center;
   }
 }
+
+/* === CruiseCast Spinner === */
+
+@keyframes cc-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.cc-spinner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* click-through by default */
+}
+
+.cc-spinner-card {
+  pointer-events: auto;
+  padding: 1.25rem 1.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f9fafb;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(248, 250, 252, 0.75);
+}
+
+.cc-spinner-icon-wrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+.cc-spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 3px solid rgba(191, 219, 254, 0.35);
+  border-top-color: #facc15; /* yellow accent */
+  border-right-color: #22c1c3; /* teal accent */
+  animation: cc-spin 0.8s linear infinite;
+}
+
+.cc-spinner-dot {
+  position: absolute;
+  inset: 6px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 20%, #fde68a, #f97316);
+}
+
+.cc-spinner-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* === CruiseCast Form Styling (matches homescreen vibe) === */
+
+.cc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Field groups */
+
+.cc-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cc-field-label {
+  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.85);
+}
+
+/* Selects + inputs */
+
+.cc-select,
+.cc-input {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: rgba(248, 250, 252, 0.98);
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+  appearance: none;
+  /* little caret space on the right */
+  background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%),
+    linear-gradient(135deg, #9ca3af 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 13px) calc(50% - 3px);
+  background-repeat: no-repeat;
+  background-size: 6px 6px, 6px 6px;
+}
+
+.cc-select:focus,
+.cc-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.5);
+  background: #ffffff;
+}
+
+/* For the date input if you’re using it somewhere */
+.cc-input-date {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  background: rgba(248, 250, 252, 0.98);
+  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  outline: none;
+}
+
+/* Calendar wrapper */
+
+.cc-calendar-shell {
+  margin-top: 0.4rem;
+  border-radius: 24px;
+  padding: 0.75rem 0.75rem 0.9rem;
+  background: rgba(248, 250, 252, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.15);
+}
+
+/* CTA row */
+
+.cc-cta-row {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cc-cta-row-right {
+  margin-left: auto;
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* === Homescreen-style pill buttons with border animation === */
+
+.cc-cta-button {
+  position: relative;
+  border-radius: 999px;
+  padding: 0.7rem 1.5rem;
+  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    background-color 0.12s ease, color 0.12s ease;
+}
+
+.cc-cta-button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* Primary button (matches homescreen) */
+
+.cc-cta-button--primary {
+  background: linear-gradient(135deg, #22c1c3, #1f7ece);
+  color: #f9fafb;
+}
+
+/* Secondary / ghost */
+
+.cc-cta-button--secondary {
+  background: rgba(15, 23, 42, 0.04);
+  color: #0f172a;
+  border-radius: 999px;
+}
+
+/* Border drawing animation – thin line around the button */
+
+.cc-cta-button::before,
+.cc-cta-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  pointer-events: none;
+}
+
+.cc-cta-button::before {
+  border-top-color: rgba(251, 191, 36, 0.0);
+  border-right-color: rgba(56, 189, 248, 0.0);
+  border-bottom-color: rgba(45, 212, 191, 0.0);
+  border-left-color: rgba(251, 191, 36, 0.0);
+}
+
+.cc-cta-button::after {
+  border-color: transparent;
+}
+
+/* subtle “running” border on hover */
+.cc-cta-button:hover::before {
+  animation: cc-border-run 0.8s linear forwards;
+}
+
+@keyframes cc-border-run {
+  0% {
+    border-top-color: rgba(251, 191, 36, 1);
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+  }
+  33% {
+    border-top-color: rgba(251, 191, 36, 1);
+    border-right-color: rgba(56, 189, 248, 1);
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+  }
+  66% {
+    border-top-color: rgba(251, 191, 36, 1);
+    border-right-color: rgba(56, 189, 248, 1);
+    border-bottom-color: rgba(45, 212, 191, 1);
+    border-left-color: transparent;
+  }
+  100% {
+    border-top-color: rgba(251, 191, 36, 1);
+    border-right-color: rgba(56, 189, 248, 1);
+    border-bottom-color: rgba(45, 212, 191, 1);
+    border-left-color: rgba(251, 191, 36, 1);
+  }
+}
+
+/* small tweak on hover shadow */
+.cc-cta-button--primary:hover {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+}
+
+.cc-cta-button--secondary:hover {
+  background: rgba(15, 23, 42, 0.07);
+}
+
+
