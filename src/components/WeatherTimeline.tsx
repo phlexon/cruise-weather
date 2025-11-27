@@ -1,418 +1,187 @@
 // src/components/WeatherTimeline.tsx
 import React, { useEffect, useMemo, useState } from "react";
 
-export type ItineraryDay = {
+export type TimelineIcon = "sunny" | "partly" | "cloudy" | "rain";
+
+export type TimelineDay = {
   day: number;
   date?: string;
   location: string;
   high?: number;
   low?: number;
   rainChance?: number;
-  icon?: "sunny" | "partly" | "cloudy" | "rain";
+  icon?: TimelineIcon;
   description?: string;
   source?: "forecast" | "climatology";
 };
 
 type WeatherTimelineProps = {
-  itinerary: ItineraryDay[];
+  itinerary: TimelineDay[];
 };
 
-function getIsMobile() {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(max-width: 768px)").matches;
-}
+const isBrowser = typeof window !== "undefined";
 
 export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
-  const [page, setPage] = useState(0);
-  const [isMobile, setIsMobile] = useState<boolean>(getIsMobile);
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    isBrowser ? window.innerWidth < 768 : false
+  );
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const onResize = () => {
-      setIsMobile(getIsMobile());
-    };
-
+    if (!isBrowser) return;
+    const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const pageSize = 3;
+  const cards = useMemo(() => itinerary ?? [], [itinerary]);
 
-  const totalPages = useMemo(() => {
-    if (!itinerary || itinerary.length === 0) return 0;
-    // desktop only uses pages; mobile shows all in a scroll row
-    return Math.ceil(itinerary.length / pageSize);
-  }, [itinerary]);
+  if (!cards.length) return null;
 
-  // Keep page in range if itinerary length changes
-  useEffect(() => {
-    if (!totalPages) {
-      setPage(0);
-      return;
-    }
-    if (page > totalPages - 1) {
-      setPage(totalPages - 1);
-    }
-  }, [page, totalPages]);
-
-  const visibleDays = useMemo(() => {
-    if (!itinerary) return [];
-
-    if (isMobile) {
-      // mobile: show ALL cards, horizontal scroll handles overflow
-      return itinerary;
-    }
-
-    // desktop: 3 cards per page
-    const start = page * pageSize;
-    const end = start + pageSize;
-    return itinerary.slice(start, end);
-  }, [itinerary, isMobile, page]);
-
-  const handlePrev = () => {
-    setPage((p) => Math.max(0, p - 1));
-  };
-
-  const handleNext = () => {
-    if (!totalPages) return;
-    setPage((p) => Math.min(totalPages - 1, p + 1));
-  };
-
-  if (!itinerary || itinerary.length === 0) {
-    return null;
+  if (isMobile) {
+    return (
+      <div className="cc-weather-timeline cc-weather-timeline--mobile">
+        <div className="cc-weather-row-mobile">
+          {cards.map((day, idx) => (
+            <WeatherCard
+              key={day.date ?? `${day.day}-${idx}`}
+              day={day}
+            />
+          ))}
+        </div>
+      </div>
+    );
   }
 
-  const getIconSrc = (icon?: ItineraryDay["icon"]) => {
-    switch (icon) {
-      case "rain":
-        return "/icons/rain.svg";
-      case "cloudy":
-        return "/icons/cloudy.svg";
-      case "partly":
-        return "/icons/partly.svg";
-      case "sunny":
-      default:
-        return "/icons/sunny.svg";
-    }
-  };
+  return <DesktopWeatherTimeline cards={cards} />;
+}
 
-  const getIconAlt = (icon?: ItineraryDay["icon"]) => {
-    switch (icon) {
-      case "rain":
-        return "Rainy";
-      case "cloudy":
-        return "Cloudy";
-      case "partly":
-        return "Partly cloudy";
-      case "sunny":
-      default:
-        return "Sunny";
-    }
-  };
+type WeatherCardProps = {
+  day: TimelineDay;
+};
+
+function WeatherCard({ day }: WeatherCardProps) {
+  const isClimo = day.source === "climatology";
+
+  const iconName: TimelineIcon = day.icon || "sunny";
+  const iconSrc = `/icons/${iconName}.svg`;
+
+  const dateLabel = day.date
+    ? new Date(day.date + "T00:00:00Z").toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      })
+    : `Day ${day.day}`;
+
+  const badgeText = isClimo
+    ? "30-year average · Not a forecast"
+    : "Live forecast";
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.75rem",
-      }}
+    <article
+      className={
+        "cc-weather-card " +
+        (isClimo ? "cc-weather-card--climo" : "cc-weather-card--forecast")
+      }
     >
-      {/* Wrapper: arrows on left/right (desktop), just cards (mobile) */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "stretch",
-          gap: isMobile ? "0.75rem" : "0.75rem",
-        }}
-      >
-        {/* Left arrow – desktop only */}
-        {!isMobile && totalPages > 1 && (
-          <button
-            type="button"
-            onClick={handlePrev}
-            disabled={page === 0}
-            style={{
-              width: 40,
-              height: 40,
-              alignSelf: "center",
-              borderRadius: "999px",
-              border: "none",
-              background:
-                page === 0 ? "rgba(148, 163, 184, 0.25)" : "#e5e7eb",
-              color: "#6b7280",
-              fontSize: "1rem",
-              cursor: page === 0 ? "default" : "pointer",
-              flexShrink: 0,
-            }}
-          >
-            ◀
-          </button>
-        )}
+      <header className="cc-weather-card-header">
+  <div className="cc-weather-card-date">
+    Day {day.day}
+    {dateLabel ? ` · ${dateLabel}` : ""}
+  </div>
 
-        {/* Cards container */}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "row",
-            flexWrap: "nowrap",
-            gap: "0.9rem",
-            alignItems: "stretch",
-            overflowX: isMobile ? "auto" : "visible",
-            paddingBottom: isMobile ? "0.75rem" : 0,
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          {visibleDays.map((day) => {
-            const isClimo = day.source === "climatology";
+  {/* badge now its own line */}
+  <div className="cc-weather-card-badge cc-weather-card-badge--block">
+    {badgeText}
+  </div>
+</header>
 
-            const cardBackground = isClimo
-              ? "linear-gradient(135deg, #e0ecff, #c4d5ff)"
-              : "linear-gradient(135deg, #fee9c3, #fdc47b)";
 
-            const labelColor = isClimo ? "#312e81" : "#7c2d12";
-            const tempColor = isClimo ? "#1f2937" : "#7c2d12";
-
-            const dateLabel = day.date
-              ? new Date(day.date + "T00:00:00Z").toLocaleDateString(
-                  undefined,
-                  {
-                    month: "short",
-                    day: "numeric",
-                  }
-                )
-              : `Day ${day.day}`;
-
-            const hi = day.high != null ? Math.round(day.high) : null;
-            const lo = day.low != null ? Math.round(day.low) : null;
-
-            const iconSrc = getIconSrc(day.icon);
-            const iconAlt = getIconAlt(day.icon);
-
-            return (
-              <div
-                key={day.day}
-                style={{
-                  flex: isMobile ? "0 0 78%" : 1,
-                  minWidth: isMobile ? "78%" : 0,
-                  borderRadius: "26px",
-                  padding: "0.9rem 1.05rem 0.95rem",
-                  background: cardBackground,
-                  boxShadow: "none",
-                  color: "#111827",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                {/* Top row: day + date */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    justifyContent: "space-between",
-                    gap: "0.5rem",
-                    marginBottom: "0.35rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: labelColor,
-                    }}
-                  >
-                    Day {day.day}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.8rem",
-                      color: "#374151",
-                    }}
-                  >
-                    {dateLabel}
-                  </div>
-                </div>
-
-                {/* Location – bigger, multi-line */}
-                <div
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    color: "#111827",
-                    marginBottom: "0.6rem",
-                    minHeight: "2.6em", // room for ~2 lines to keep icon alignment
-                    display: "flex",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <span
-                    style={{
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {day.location}
-                  </span>
-                </div>
-
-                {/* Middle row: temps + icon */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: "0.45rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.1rem",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "1.5rem",
-                        fontWeight: 700,
-                        color: tempColor,
-                      }}
-                    >
-                      {hi != null ? `${hi}°` : "--"}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.78rem",
-                        color: "#374151",
-                      }}
-                    >
-                      {lo != null ? `Low ${lo}°` : "Low --"}
-                    </div>
-                    {day.rainChance != null && (
-                      <div
-                        style={{
-                          fontSize: "0.78rem",
-                          color: "#1e40af",
-                        }}
-                      >
-                        {Math.round(day.rainChance)}% chance of rain
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Icon */}
-                  <div
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: "999px",
-                      background: "rgba(255, 255, 255, 0.8)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <img
-                      src={iconSrc}
-                      alt={iconAlt}
-                      style={{
-                        width: 42,
-                        height: 42,
-                        display: "block",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Description + climatology badge */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.25rem",
-                    marginTop: "0.1rem",
-                  }}
-                >
-                  {day.description && (
-                    <div
-                      style={{
-                        fontSize: "0.78rem",
-                        color: "#374151",
-                      }}
-                    >
-                      {day.description}
-                    </div>
-                  )}
-
-                  {isClimo && (
-                    <div
-                      style={{
-                        alignSelf: "flex-start",
-                        marginTop: "0.15rem",
-                        padding: "0.18rem 0.6rem",
-                        borderRadius: "999px",
-                        background: "rgba(15, 23, 42, 0.08)",
-                        fontSize: "0.7rem",
-                        fontWeight: 600,
-                        letterSpacing: "0.16em",
-                        textTransform: "uppercase",
-                        color: "#111827",
-                      }}
-                    >
-                      30-Year Average · Not a Forecast
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      <div className="cc-weather-icon-wrap">
+        <div className="cc-weather-icon">
+          <img src={iconSrc} alt={iconName} />
         </div>
-
-        {/* Right arrow – desktop only */}
-        {!isMobile && totalPages > 1 && (
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={page >= totalPages - 1}
-            style={{
-              width: 40,
-              height: 40,
-              alignSelf: "center",
-              borderRadius: "999px",
-              border: "none",
-              background:
-                page >= totalPages - 1
-                  ? "rgba(148, 163, 184, 0.25)"
-                  : "#111827",
-              color: "#f9fafb",
-              fontSize: "1rem",
-              cursor: page >= totalPages - 1 ? "default" : "pointer",
-              flexShrink: 0,
-            }}
-          >
-            ▶
-          </button>
-        )}
       </div>
 
-      {/* Desktop: small page indicator under cards */}
-      {!isMobile && totalPages > 1 && (
-        <div
-          style={{
-            marginTop: "0.25rem",
-            fontSize: "0.78rem",
-            color: "#6b7280",
-            textAlign: "center",
-          }}
-        >
-          Page {page + 1} of {totalPages}
+      <div className="cc-weather-temp-main">
+        {typeof day.high === "number" ? `${Math.round(day.high)}°` : "--"}
+      </div>
+      <div className="cc-weather-temp-sub">
+        {typeof day.high === "number" && typeof day.low === "number"
+          ? `High ${Math.round(day.high)}° · Low ${Math.round(day.low)}°`
+          : "High / low unavailable"}
+      </div>
+
+      {typeof day.rainChance === "number" && (
+        <div className="cc-weather-rain">
+          Chance of rain: <strong>{Math.round(day.rainChance)}%</strong>
         </div>
       )}
+
+      <div className="cc-weather-location">
+        {day.location || "At sea"}
+      </div>
+
+      {day.description && (
+        <div className="cc-weather-description">{day.description}</div>
+      )}
+    </article>
+  );
+}
+
+type DesktopTimelineProps = {
+  cards: TimelineDay[];
+};
+
+function DesktopWeatherTimeline({ cards }: DesktopTimelineProps) {
+  const cardsPerPage = 3;
+  const totalPages = Math.max(1, Math.ceil(cards.length / cardsPerPage));
+  const [page, setPage] = useState(0);
+
+  const start = page * cardsPerPage;
+  const pageCards = cards.slice(start, start + cardsPerPage);
+
+  const goPrev = () => setPage((p) => Math.max(0, p - 1));
+  const goNext = () =>
+    setPage((p) => Math.min(totalPages - 1, p + 1));
+
+  return (
+    <div className="cc-weather-timeline cc-weather-timeline--desktop">
+      <div className="cc-weather-desktop-shell">
+        <div className="cc-weather-desktop-row">
+          <button
+            type="button"
+            className="cc-weather-nav-btn"
+            onClick={goPrev}
+            disabled={page === 0}
+            aria-label="Previous days"
+          >
+            ‹
+          </button>
+
+          <div className="cc-weather-desktop-cards">
+            {pageCards.map((day, idx) => (
+              <WeatherCard
+                key={day.date ?? `${day.day}-${start + idx}`}
+                day={day}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="cc-weather-nav-btn"
+            onClick={goNext}
+            disabled={page === totalPages - 1}
+            aria-label="Next days"
+          >
+            ›
+          </button>
+        </div>
+
+        <div className="cc-weather-page-indicator">
+          Page {page + 1} of {totalPages}
+        </div>
+      </div>
     </div>
   );
 }

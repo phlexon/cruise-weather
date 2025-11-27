@@ -199,15 +199,17 @@ export default function MobileCruiseWizard({
             </button>
 
             {/* FULL-WIDTH NEXT */}
-            <button
-              type="button"
-              className="cc-cta-button cc-cta-button--primary"
-              style={{ width: "100%" }}
-              disabled={!canGoNext}
-              onClick={() => setStep(2)}
-            >
-              Next: Choose Dates
-            </button>
+        <button
+  type="button"
+  className="cc-cta cc-cta--border cc-cta--full"
+  disabled={!canGoNext}
+  onClick={() => setStep(2)}
+>
+  <span className="cc-cta-label">NEXT: CHOOSE DATES</span>
+  <span className="cc-cta-icon">▶</span>
+</button>
+
+
           </div>
         </>
       )}

@@ -1,7 +1,6 @@
 // src/App.tsx
 import React, { useEffect, useState } from "react";
-import CruiseForm from "./components/CruiseForm";
-import CruiseResults from "./components/CruiseResults";
+import CruiseForm, { type CruiseSelection } from "./components/CruiseForm";
 import WeatherTimeline from "./components/WeatherTimeline";
 import {
   searchCruisesByDate,
@@ -15,14 +14,6 @@ import { sampleItinerary } from "./data/mockData";
 import Spinner from "./components/Spinner";
 import MobileCruiseWizard from "./components/MobileCruiseWizard";
 import HomeScreen from "./screens/HomeScreen";
-
-type CruiseSelection = {
-  lineId: string;
-  shipId: string;
-  sailDate: string;
-  lineName?: string;
-  shipName?: string;
-};
 
 type ItineraryDay = {
   day: number;
@@ -40,8 +31,6 @@ export default function App() {
   const [view, setView] = useState<"home" | "app">("home");
 
   const [searchResults, setSearchResults] = useState<CruiseSummary[]>([]);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
@@ -57,26 +46,39 @@ export default function App() {
 
   const [hasWeather, setHasWeather] = useState(false);
   const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
-
   const [shouldAutoOpenSingle, setShouldAutoOpenSingle] = useState(false);
 
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(() =>
+  // mobile detection
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
 
+  // mobile stage: wizard form vs full-screen results
+  const [mobileStage, setMobileStage] = useState<"form" | "results">("form");
+
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
+    if (typeof window === "undefined") return;
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const selectedIndex =
-    selectedCruise && searchResults.length
-      ? searchResults.findIndex((c) => c.id === selectedCruise.id)
-      : null;
+  // helper to wipe app state (used when going back to search/home)
+  const resetAppState = () => {
+    setSearchResults([]);
+    setLoadingSearch(false);
+    setLoadingDetails(false);
+    setError(null);
+    setDetailsError(null);
+    setSelectedCruise(null);
+    setItinerary(sampleItinerary as unknown as ItineraryDay[]);
+    setHasWeather(false);
+    setCurrentSailDate(null);
+    setShouldAutoOpenSingle(false);
+    setMobileStage("form");
+  };
 
-  // ------------------- SEARCH HANDLER -------------------
+  // ---------------- SEARCH HANDLER ----------------
   const handleCruiseSubmit = async (selection: CruiseSelection) => {
     const { lineName, shipName, sailDate } = selection;
 
@@ -85,11 +87,10 @@ export default function App() {
     setDetailsError(null);
     setSelectedCruise(null);
     setSearchResults([]);
-    setHasSubmitted(false);
     setHasWeather(false);
     setShouldAutoOpenSingle(false);
-
     setCurrentSailDate(sailDate);
+    setMobileStage("form"); // always start in form stage for a new search
 
     try {
       const results = await searchCruisesByDate(sailDate);
@@ -101,20 +102,21 @@ export default function App() {
       });
 
       setSearchResults(filtered);
-      setHasSubmitted(true);
 
       if (filtered.length === 1) {
         setShouldAutoOpenSingle(true);
+      } else {
+        setSelectedCruise(null);
       }
     } catch (e) {
+      console.error("Error searching cruises:", e);
       setError("There was a problem loading cruise results.");
-      setHasSubmitted(true);
     } finally {
       setLoadingSearch(false);
     }
   };
 
-  // ------------------- LOAD ITINERARY + WEATHER -------------------
+  // ---------------- LOAD ITINERARY + WEATHER ----------------
   const loadCruiseDetails = async (cruise: CruiseSummary) => {
     setSelectedCruise(cruise);
     setLoadingDetails(true);
@@ -129,10 +131,12 @@ export default function App() {
 
       let daysToUse = cruiseDays;
       if (!daysToUse || !daysToUse.length) {
+        console.warn("No Apify itinerary found — using sampleItinerary");
         daysToUse = (sampleItinerary as any[]).map((d: any, idx: number) => ({
           dayNumber: idx + 1,
           date: d.date,
-          portName: d.location?.replace("(Embarkation)", "").trim(),
+          portName:
+            d.location?.replace("(Embarkation)", "").trim() ?? d.location,
           rawStopText: d.location,
         }));
       }
@@ -157,6 +161,7 @@ export default function App() {
         description: "Loading weather…",
       }));
 
+      // align dates based on selected sail date
       const sailIso = currentSailDate ?? cruise.departIso;
       const sailDateObj = new Date(sailIso + "T00:00:00Z");
 
@@ -167,12 +172,19 @@ export default function App() {
       });
 
       try {
+        const firstDay = daysToUse[0] as any;
         const rawPort =
-          (daysToUse[0] as any)?.portName ||
-          (daysToUse[0] as any)?.rawStopText ||
+          firstDay?.portName ||
+          firstDay?.rawStopText ||
+          mapped[0]?.location ||
           "Miami";
 
-        let embarkationCity = rawPort.split(",")[0].trim();
+        const cleanedPort =
+          typeof rawPort === "string"
+            ? rawPort.replace("(Embarkation)", "").trim()
+            : "Miami";
+
+        let embarkationCity = cleanedPort.split(",")[0].trim();
         if (!embarkationCity) embarkationCity = "Miami";
 
         const stationId = getNceiStationForCity(embarkationCity) ?? undefined;
@@ -198,7 +210,7 @@ export default function App() {
           const target = parseIso(dateKey);
           if (!target) return undefined;
           const targetMs = target.getTime();
-          const oneDay = 86_400_000;
+          const oneDayMs = 24 * 60 * 60 * 1000;
 
           let best: any | undefined;
           let bestDiff = Infinity;
@@ -207,7 +219,7 @@ export default function App() {
             const d = parseIso(k);
             if (!d) continue;
             const diff = Math.abs(d.getTime() - targetMs);
-            if (diff <= oneDay && diff < bestDiff) {
+            if (diff <= oneDayMs && diff < bestDiff) {
               bestDiff = diff;
               best = v;
             }
@@ -222,7 +234,10 @@ export default function App() {
           const forecast =
             forecastsByDate[dateKey] || entries[idx]?.[1] || findNearby(dateKey);
 
-          const base = { ...day, date: dateKey };
+          const base: ItineraryDay = {
+            ...day,
+            date: dateKey,
+          };
 
           if (!forecast) {
             return {
@@ -249,18 +264,23 @@ export default function App() {
 
         setHasWeather(anyWeather);
       } catch (weatherErr) {
-        setDetailsError("Weather unavailable. Using itinerary only.");
-        setHasWeather(false);
+        console.error("Weather provider failed, itinerary only:", weatherErr);
+        setDetailsError("Weather data is temporarily unavailable.");
 
         mapped = mapped.map((day, idx) => ({
           ...day,
           date: isoDates[idx],
-          description: "Weather not available right now.",
+          description:
+            day.description === "Loading weather…"
+              ? "Weather not available right now."
+              : day.description,
         }));
+        setHasWeather(false);
       }
 
       setItinerary(mapped);
     } catch (e) {
+      console.error("Error loading cruise itinerary:", e);
       setDetailsError("There was a problem loading the cruise itinerary.");
       setItinerary(sampleItinerary as unknown as ItineraryDay[]);
       setHasWeather(false);
@@ -269,47 +289,166 @@ export default function App() {
     }
   };
 
-  // Auto-open single match
+  // auto-open when exactly 1 cruise matches
   useEffect(() => {
-    if (shouldAutoOpenSingle && searchResults.length === 1) {
-      setShouldAutoOpenSingle(false);
-      loadCruiseDetails(searchResults[0]);
-    }
-  }, [shouldAutoOpenSingle, searchResults]);
+    if (!shouldAutoOpenSingle) return;
+    if (searchResults.length !== 1) return;
 
-  const handleResultClick = async (i: number) => {
-    const cruise = searchResults[i];
+    const cruise = searchResults[0];
     if (!cruise) return;
-    await loadCruiseDetails(cruise);
-  };
 
-  // --------------- HOME SCREEN ---------------
+    setShouldAutoOpenSingle(false);
+    void loadCruiseDetails(cruise);
+    if (isMobile) {
+      setMobileStage("results"); // on mobile, jump to results screen
+    }
+  }, [shouldAutoOpenSingle, searchResults, isMobile]);
+
+  // ---------------- HOME SCREEN ----------------
   if (view === "home") {
     return (
       <HomeScreen
-        onFindCruise={() => setView("app")}
-        onLogin={() => alert("Login coming soon!")}
+        onFindCruise={() => {
+          resetAppState();
+          setView("app");
+        }}
+        onLogin={() => {
+          alert("Login coming soon!");
+        }}
       />
     );
   }
 
-  // --------------- MAIN APP UI ---------------
+  // ---------------- MOBILE RESULTS SCREEN ----------------
+  if (isMobile && mobileStage === "results" && selectedCruise) {
+    return (
+      <div className="cc-app">
+        {(loadingSearch || loadingDetails) && (
+          <Spinner
+            message={
+              loadingSearch
+                ? "Searching sailings..."
+                : "Loading cruise details..."
+            }
+          />
+        )}
+
+        <header className="cc-app-header">
+          <img
+            src="/cruisecast-logo.webp"
+            alt="CruiseCast"
+            className="cc-app-logo"
+          />
+          <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+        </header>
+
+        <main className="cc-app-main">
+          <div className="cc-app-main-inner">
+            <section className="cc-main-card">
+              <div
+                style={{
+                  marginBottom: "1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                <button
+                  type="button"
+                  className="cc-cta-button cc-cta-button--secondary"
+                  style={{ width: "100%" }}
+                  onClick={() => {
+                    // back from results → reset and go to wizard
+                    resetAppState();
+                    setMobileStage("form");
+                  }}
+                >
+                  ← Back to search
+                </button>
+              </div>
+
+              {detailsError && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    marginTop: "6px",
+                    color: "#b91c1c",
+                    fontWeight: 500,
+                  }}
+                >
+                  {detailsError}
+                </p>
+              )}
+
+              {!loadingDetails && !hasWeather && !detailsError && (
+                <p
+                  style={{
+                    fontSize: "11px",
+                    margin: "0 0 6px 0",
+                    opacity: 0.8,
+                    fontStyle: "italic",
+                  }}
+                >
+                  Weather data isn&apos;t available yet for this sailing —
+                  showing itinerary only.
+                </p>
+              )}
+
+              <div className="cc-weather-panel">
+                <WeatherTimeline itinerary={itinerary} />
+              </div>
+
+              <div className="cc-cruise-summary">
+                <div className="cc-cruise-summary-title">
+                  {selectedCruise.title}
+                  {selectedCruise.shipName
+                    ? ` · Ship: ${selectedCruise.shipName}`
+                    : ""}
+                  {selectedCruise.cruiseLine
+                    ? ` · Line: ${selectedCruise.cruiseLine}`
+                    : ""}
+                </div>
+                <div>
+                  Weather combines live forecasts from Tomorrow.io with 30-year
+                  climate normals from NOAA. Peach cards show live forecasts;
+                  indigo cards show long-term averages.
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
+
+        <footer className="cc-app-footer">
+          v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io and
+          NOAA NCEI.
+        </footer>
+      </div>
+    );
+  }
+
+  // ---------------- MAIN APP UI (desktop + mobile form stage) ----------------
   return (
     <div className="cc-app">
       {(loadingSearch || loadingDetails) && (
         <Spinner
-          message={loadingSearch ? "Searching sailings..." : "Loading details..."}
+          message={
+            loadingSearch ? "Searching sailings..." : "Loading cruise details..."
+          }
         />
       )}
 
       <header className="cc-app-header">
-        <img src="/cruisecast-logo.webp" alt="CruiseCast" className="cc-app-logo" />
+        <img
+          src="/cruisecast-logo.webp"
+          alt="CruiseCast"
+          className="cc-app-logo"
+        />
 
         <div className="cc-app-tagline">
           PLAN AHEAD • SAIL SMART
           <div className="cc-app-subtitle">
-            Forecast your cruise day by day — itineraries from Apify, weather from
-            Tomorrow.io + NOAA.
+            Forecast your cruise day by day — itineraries from real sailings,
+            weather from Tomorrow.io and NOAA climate normals.
           </div>
         </div>
       </header>
@@ -319,11 +458,13 @@ export default function App() {
           <section className="cc-main-card">
             <h1 className="cc-main-title">Check Your Cruise Weather</h1>
 
-            {/* DESKTOP → CruiseForm | MOBILE → Wizard */}
             {isMobile ? (
               <MobileCruiseWizard
                 onSubmit={handleCruiseSubmit}
-                onBackToHome={() => setView("home")}
+                onBackToHome={() => {
+                  resetAppState();
+                  setView("home");
+                }}
               />
             ) : (
               <CruiseForm onSubmit={handleCruiseSubmit} />
@@ -332,54 +473,75 @@ export default function App() {
             {error && <p className="cc-main-error">{error}</p>}
 
             <div className="cc-itinerary-wrapper">
-              {!selectedCruise ? (
+              {selectedCruise ? (
                 <>
-                  <h2 className="cc-empty-title">Your cruise, day by day.</h2>
+                  {detailsError && (
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        marginTop: "6px",
+                        color: "#b91c1c",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {detailsError}
+                    </p>
+                  )}
+
+                  {!loadingDetails && !hasWeather && !detailsError && (
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        margin: "0 0 6px 0",
+                        opacity: 0.8,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Weather data isn&apos;t available yet for this sailing —
+                      showing itinerary only.
+                    </p>
+                  )}
+
+                  {/* On desktop we still show timeline under the form.
+                      On mobile, the results live on their own screen. */}
+                  {!isMobile && (
+                    <>
+                      <div className="cc-weather-panel">
+                        <WeatherTimeline itinerary={itinerary} />
+                      </div>
+
+                      <div className="cc-cruise-summary">
+                        <div className="cc-cruise-summary-title">
+                          {selectedCruise.title}
+                          {selectedCruise.shipName
+                            ? ` · Ship: ${selectedCruise.shipName}`
+                            : ""}
+                          {selectedCruise.cruiseLine
+                            ? ` · Line: ${selectedCruise.cruiseLine}`
+                            : ""}
+                        </div>
+                        <div>
+                          Weather combines live forecasts from Tomorrow.io with
+                          30-year climate normals from NOAA. Peach cards show
+                          live forecasts; indigo cards show long-term averages.
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
-                  <div className="cc-weather-panel">
-                    <WeatherTimeline itinerary={itinerary} />
-                  </div>
-
-                  <div className="cc-cruise-summary">
-                    <div className="cc-cruise-summary-title">
-                      {selectedCruise.title}
-                    </div>
-                    <div>
-                      Weather combines Tomorrow.io forecasts with NOAA 30-year
-                      climate normals.
-                    </div>
-                  </div>
+                  <h2 className="cc-empty-title">Your cruise, day by day.</h2>
                 </>
               )}
             </div>
           </section>
-
-          {hasSubmitted && searchResults.length > 0 && (
-            <section className="cc-results-card">
-              <h2 className="cc-results-title">Matching cruises</h2>
-              <CruiseResults
-                results={searchResults}
-                selectedIndex={selectedIndex}
-                onSelect={handleResultClick}
-              />
-            </section>
-          )}
-
-          {hasSubmitted &&
-            !loadingSearch &&
-            searchResults.length === 0 &&
-            !error && (
-              <section className="cc-results-empty">
-                No cruises found for that ship / date.
-              </section>
-            )}
         </div>
       </main>
 
       <footer className="cc-app-footer">
-        v1.0 — Cruises from Apify. Weather: Tomorrow.io + NOAA.
+        v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io and
+        NOAA NCEI.
       </footer>
     </div>
   );
