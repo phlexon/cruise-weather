@@ -208,9 +208,6 @@
   .visible {
     visibility: visible;
   }
-  .absolute {
-    position: absolute;
-  }
   .fixed {
     position: fixed;
   }
@@ -219,15 +216,6 @@
   }
   .static {
     position: static;
-  }
-  .top-4 {
-    top: calc(var(--spacing) * 4);
-  }
-  .right-4 {
-    right: calc(var(--spacing) * 4);
-  }
-  .z-50 {
-    z-index: 50;
   }
   .\!container {
     width: 100% !important;

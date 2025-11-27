@@ -1,5 +1,7 @@
 // src/App.tsx
 import React, { useEffect, useState } from "react";
+import "./App.css";
+
 import CruiseForm, { type CruiseSelection } from "./components/CruiseForm";
 import WeatherTimeline from "./components/WeatherTimeline";
 import {
@@ -327,26 +329,22 @@ export default function App() {
     return (
       <>
         <CloudBackground />
-        {/* Auth panel floating in top-right on home */}
         <div
-  style={{
-    position: "absolute",
-    top: 16,
-    right: 16,
-    zIndex: 50,
-  }}
->
-  <AuthPanel />
-</div>
-
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: 9999,
+          }}
+        >
+          <AuthPanel />
+        </div>
         <HomeScreen
           onFindCruise={() => {
             resetAppState();
             setView("app");
           }}
-          onLogin={() => {
-            // optional hook if you ever want a dedicated login CTA
-          }}
+          onLogin={() => {}}
         />
       </>
     );
@@ -357,7 +355,14 @@ export default function App() {
     return (
       <>
         <CloudBackground />
-        <div className="absolute right-4 top-4 z-50">
+        <div
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: 9999,
+          }}
+        >
           <AuthPanel />
         </div>
 
@@ -397,7 +402,6 @@ export default function App() {
                     className="cc-cta-button cc-cta-button--secondary"
                     style={{ width: "100%" }}
                     onClick={() => {
-                      // back from results → reset and go to wizard
                       resetAppState();
                       setMobileStage("form");
                     }}
@@ -475,7 +479,14 @@ export default function App() {
   return (
     <>
       <CloudBackground />
-      <div className="absolute right-4 top-4 z-50">
+      <div
+        style={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 9999,
+        }}
+      >
         <AuthPanel />
       </div>
 
@@ -523,7 +534,6 @@ export default function App() {
 
               {error && <p className="cc-main-error">{error}</p>}
 
-              {/* Saved cruises list (only shows when logged in) */}
               <SavedCruises onSelectSaved={handleSelectSavedCruise} />
 
               <div className="cc-itinerary-wrapper">
@@ -556,8 +566,6 @@ export default function App() {
                       </p>
                     )}
 
-                    {/* On desktop we still show timeline under the form.
-                        On mobile, results live on their own screen. */}
                     {!isMobile && (
                       <>
                         <div className="cc-weather-panel">
@@ -583,7 +591,9 @@ export default function App() {
 
                           <SaveCruiseButton
                             cruise={selectedCruise}
-                            sailDate={currentSailDate ?? selectedCruise.departIso}
+                            sailDate={
+                              currentSailDate ?? selectedCruise.departIso
+                            }
                           />
                         </div>
                       </>
