@@ -548,3 +548,21 @@
   z-index: 2;
 }
 
+@media (max-width: 768px) {
+  .cc-main-title {
+    font-size: 43px !important;
+    font-weight: 900 !important;
+    color: #214a7e !important;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .cc-field-label {
+    text-align: center !important;
+    width: 100%;
+    display: block;
+  }
+}
+

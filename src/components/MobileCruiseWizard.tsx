@@ -11,41 +11,44 @@ import type { CruiseSelection } from "./CruiseForm";
 
 type MobileCruiseWizardProps = {
   onSubmit: (selection: CruiseSelection) => void;
+  onBackToHome: () => void;          // ← NEW
 };
 
 type WizardStep = 1 | 2;
 
-export default function MobileCruiseWizard({ onSubmit }: MobileCruiseWizardProps) {
+export default function MobileCruiseWizard({
+  onSubmit,
+  onBackToHome,                         // ← NEW
+}: MobileCruiseWizardProps) {
   const [step, setStep] = useState<WizardStep>(1);
 
   const [lines, setLines] = useState<CruiseLineOption[]>([]);
   const [allShips, setAllShips] = useState<ShipOption[]>([]);
-  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [loadingOptions, setLoadingOptions] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
 
-  const [selectedLineId, setSelectedLineId] = useState("");
-  const [selectedShipId, setSelectedShipId] = useState("");
-  const [sailings, setSailings] = useState<Sailing[]>([]);
-  const [loadingSailings, setLoadingSailings] = useState(false);
+  const [selectedLineId, setSelectedLineId] = useState<string>("");
+  const [selectedShipId, setSelectedShipId] = useState<string>("");
+
+  const [sailDate, setSailDate] = useState<string>("");
+  const [calendarSailings, setCalendarSailings] = useState<Sailing[]>([]);
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [sailingsError, setSailingsError] = useState<string | null>(null);
 
-  // Load lines + ships (same as in CruiseForm)
+  // ---------------- OPTIONS ----------------
   useEffect(() => {
     let cancelled = false;
 
     async function loadOptions() {
       try {
         setLoadingOptions(true);
-        setOptionsError(null);
-
-        const { cruiseLines, ships } = await getCruiseOptionsFromApify();
+        const { lines, ships } = await getCruiseOptionsFromApify();
         if (cancelled) return;
 
-        setLines(cruiseLines);
+        setLines(lines);
         setAllShips(ships);
-      } catch (err) {
-        console.error("Error loading cruise options:", err);
-        if (!cancelled) setOptionsError("Unable to load cruise lines and ships.");
+      } catch (e) {
+        setOptionsError("Unable to load cruise options.");
       } finally {
         if (!cancelled) setLoadingOptions(false);
       }
@@ -57,65 +60,73 @@ export default function MobileCruiseWizard({ onSubmit }: MobileCruiseWizardProps
     };
   }, []);
 
+  // Filter ships → uses ship.lineId (matches your CruiseForm)
   const shipsForLine = useMemo(() => {
     if (!selectedLineId) return [];
-    return allShips.filter((ship) => ship.line_id === selectedLineId);
+    return allShips
+      .filter((s) => s.lineId === selectedLineId)
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [allShips, selectedLineId]);
 
-  const selectedLine = lines.find((l) => l.id === selectedLineId) || null;
-  const selectedShip = shipsForLine.find((s) => s.id === selectedShipId) || null;
+  // ---------------- HANDLERS ----------------
 
-  // When ship changes, load sailings for that ship
-  useEffect(() => {
-    if (!selectedShipId) {
-      setSailings([]);
-      return;
+  const handleLineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedLineId(e.target.value);
+    setSelectedShipId("");
+    setCalendarSailings([]);
+    setSailDate("");
+  };
+
+  const handleShipChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const shipId = e.target.value;
+    setSelectedShipId(shipId);
+    setCalendarSailings([]);
+    setSailDate("");
+
+    const ship = allShips.find((s) => s.id === shipId);
+    if (!ship) return;
+
+    try {
+      setLoadingCalendar(true);
+      const sailings = await getShipSailingsFromApify(ship.name);
+
+      setCalendarSailings(
+        sailings.map((s) => ({
+          date: s.departIso,
+          title: s.title,
+        }))
+      );
+    } catch (e) {
+      setSailingsError("Unable to load sailings for this ship.");
+    } finally {
+      setLoadingCalendar(false);
     }
+  };
 
-    let cancelled = false;
+  const handleCalendarSelect = (dateIso: string) => {
+    setSailDate(dateIso);
 
-    async function loadSailings() {
-      try {
-        setLoadingSailings(true);
-        setSailingsError(null);
-        const shipSailings = await getShipSailingsFromApify(selectedShipId);
-        if (cancelled) return;
-        setSailings(shipSailings);
-      } catch (err) {
-        console.error("Error loading ship sailings:", err);
-        if (!cancelled) setSailingsError("Unable to load sailings for this ship.");
-      } finally {
-        if (!cancelled) setLoadingSailings(false);
-      }
-    }
+    const line = lines.find((l) => l.id === selectedLineId);
+    const ship = allShips.find((s) => s.id === selectedShipId);
+    if (!line || !ship) return;
 
-    loadSailings();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedShipId]);
-
-  // Handle date click in calendar – final submit
-  const handleDateSelect = (sailing: Sailing) => {
-    if (!selectedLine || !selectedShip) return;
-
-    const selection: CruiseSelection = {
-      lineId: selectedLine.id,
-      shipId: selectedShip.id,
-      sailDate: sailing.date, // expected "YYYY-MM-DD"
-      lineName: selectedLine.name,
-      shipName: selectedShip.name,
-    };
-
-    onSubmit(selection);
+    onSubmit({
+      lineId: line.id,
+      shipId: ship.id,
+      sailDate: dateIso,
+      lineName: line.name,
+      shipName: ship.name,
+    });
   };
 
   const canGoNext =
     !!selectedLineId && !!selectedShipId && !loadingOptions && !optionsError;
 
+  // ---------------- UI ----------------
+
   return (
     <div className="cc-form">
-      {/* Step indicator (simple) */}
+      {/* Step indicator */}
       <div
         style={{
           display: "flex",
@@ -133,28 +144,17 @@ export default function MobileCruiseWizard({ onSubmit }: MobileCruiseWizardProps
         <span style={{ fontWeight: step === 2 ? 700 : 400 }}>Dates</span>
       </div>
 
-      {optionsError && (
-        <div className="cc-main-error" style={{ marginBottom: "8px" }}>
-          {optionsError}
-        </div>
-      )}
-
+      {/* ---------------- STEP 1 ---------------- */}
       {step === 1 && (
         <>
-          {/* Cruise line */}
           <div className="cc-field-group">
             <label className="cc-field-label">Cruise Line</label>
             <select
               className="cc-select"
               value={selectedLineId}
-              onChange={(e) => {
-                setSelectedLineId(e.target.value);
-                setSelectedShipId("");
-                setSailings([]);
-              }}
-              disabled={loadingOptions}
+              onChange={handleLineChange}
             >
-              <option value="">Select a cruise line</option>
+              <option value="">Please Select One</option>
               {lines.map((line) => (
                 <option key={line.id} value={line.id}>
                   {line.name}
@@ -163,18 +163,15 @@ export default function MobileCruiseWizard({ onSubmit }: MobileCruiseWizardProps
             </select>
           </div>
 
-          {/* Ship */}
           <div className="cc-field-group">
             <label className="cc-field-label">Ship</label>
             <select
               className="cc-select"
               value={selectedShipId}
-              onChange={(e) => setSelectedShipId(e.target.value)}
-              disabled={loadingOptions || !selectedLineId}
+              onChange={handleShipChange}
+              disabled={!selectedLineId}
             >
-              <option value="">
-                {selectedLineId ? "Select a ship" : "Choose a line first"}
-              </option>
+              <option value="">Please Select One</option>
               {shipsForLine.map((ship) => (
                 <option key={ship.id} value={ship.id}>
                   {ship.name}
@@ -183,11 +180,29 @@ export default function MobileCruiseWizard({ onSubmit }: MobileCruiseWizardProps
             </select>
           </div>
 
-          {/* Next button */}
-          <div className="cc-cta-row" style={{ marginTop: "1rem" }}>
+          <div
+            style={{
+              marginTop: "1.5rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            {/* FULL-WIDTH BACK → HOME */}
+            <button
+              type="button"
+              className="cc-cta-button cc-cta-button--secondary"
+              style={{ width: "100%" }}
+              onClick={onBackToHome}
+            >
+              Back
+            </button>
+
+            {/* FULL-WIDTH NEXT */}
             <button
               type="button"
               className="cc-cta-button cc-cta-button--primary"
+              style={{ width: "100%" }}
               disabled={!canGoNext}
               onClick={() => setStep(2)}
             >
@@ -197,52 +212,47 @@ export default function MobileCruiseWizard({ onSubmit }: MobileCruiseWizardProps
         </>
       )}
 
+      {/* ---------------- STEP 2 ---------------- */}
       {step === 2 && (
         <>
-          {/* Back + line/ship summary */}
+          {/* Back to Step 1 */}
           <div
-            className="cc-cta-row"
             style={{
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "0.5rem",
+              marginBottom: "1rem",
+              display: "flex",
+              justifyContent: "flex-start",
             }}
           >
             <button
               type="button"
               className="cc-cta-button cc-cta-button--secondary"
+              style={{ width: "100%" }}
               onClick={() => setStep(1)}
             >
               ← Back
             </button>
-
-            {selectedLine && selectedShip && (
-              <div
-                style={{
-                  fontSize: "11px",
-                  textAlign: "right",
-                  color: "#4b5563",
-                }}
-              >
-                <div style={{ fontWeight: 600 }}>{selectedShip.name}</div>
-                <div>{selectedLine.name}</div>
-              </div>
-            )}
           </div>
 
-          {/* Calendar */}
           <div className="cc-calendar-shell">
-            {sailingsError && (
-              <div className="cc-main-error" style={{ marginBottom: "6px" }}>
+            {loadingCalendar ? (
+              <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                Loading upcoming sailings…
+              </div>
+            ) : sailingsError ? (
+              <div style={{ fontSize: "0.8rem", color: "#b91c1c" }}>
                 {sailingsError}
               </div>
+            ) : calendarSailings.length ? (
+              <SailingsCalendar
+                sailings={calendarSailings}
+                selectedDate={sailDate}
+                onSelectDate={handleCalendarSelect}
+              />
+            ) : (
+              <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                No sailings found for this ship.
+              </div>
             )}
-
-            <SailingsCalendar
-              sailings={sailings}
-              onSelect={handleDateSelect}
-              loading={loadingSailings}
-            />
 
             <p
               style={{
