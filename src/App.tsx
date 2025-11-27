@@ -14,6 +14,12 @@ import { sampleItinerary } from "./data/mockData";
 import Spinner from "./components/Spinner";
 import MobileCruiseWizard from "./components/MobileCruiseWizard";
 import HomeScreen from "./screens/HomeScreen";
+import CloudBackground from "./components/CloudBackground";
+import AuthPanel from "./components/AuthPanel";
+import SaveCruiseButton from "./components/SaveCruiseButton";
+import SavedCruises, {
+  type SavedCruiseSelection,
+} from "./components/SavedCruises";
 
 type ItineraryDay = {
   day: number;
@@ -90,7 +96,7 @@ export default function App() {
     setHasWeather(false);
     setShouldAutoOpenSingle(false);
     setCurrentSailDate(sailDate);
-    setMobileStage("form"); // always start in form stage for a new search
+    setMobileStage("form"); // always start at form for a new search
 
     try {
       const results = await searchCruisesByDate(sailDate);
@@ -114,6 +120,18 @@ export default function App() {
     } finally {
       setLoadingSearch(false);
     }
+  };
+
+  // when user clicks a saved cruise in the list
+  const handleSelectSavedCruise = (saved: SavedCruiseSelection) => {
+    setView("app");
+    void handleCruiseSubmit({
+      lineId: saved.lineId,
+      shipId: saved.shipId,
+      sailDate: saved.sailDate,
+      lineName: saved.lineName,
+      shipName: saved.shipName,
+    });
   };
 
   // ---------------- LOAD ITINERARY + WEATHER ----------------
@@ -307,28 +325,165 @@ export default function App() {
   // ---------------- HOME SCREEN ----------------
   if (view === "home") {
     return (
-      <HomeScreen
-        onFindCruise={() => {
-          resetAppState();
-          setView("app");
-        }}
-        onLogin={() => {
-          alert("Login coming soon!");
-        }}
-      />
+      <>
+        <CloudBackground />
+        {/* Auth panel floating in top-right on home */}
+        <div
+  style={{
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 50,
+  }}
+>
+  <AuthPanel />
+</div>
+
+        <HomeScreen
+          onFindCruise={() => {
+            resetAppState();
+            setView("app");
+          }}
+          onLogin={() => {
+            // optional hook if you ever want a dedicated login CTA
+          }}
+        />
+      </>
     );
   }
 
   // ---------------- MOBILE RESULTS SCREEN ----------------
   if (isMobile && mobileStage === "results" && selectedCruise) {
     return (
+      <>
+        <CloudBackground />
+        <div className="absolute right-4 top-4 z-50">
+          <AuthPanel />
+        </div>
+
+        <div className="cc-app">
+          {(loadingSearch || loadingDetails) && (
+            <Spinner
+              message={
+                loadingSearch
+                  ? "Searching sailings..."
+                  : "Loading cruise details..."
+              }
+            />
+          )}
+
+          <header className="cc-app-header">
+            <img
+              src="/cruisecast-logo.webp"
+              alt="CruiseCast"
+              className="cc-app-logo"
+            />
+            <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+          </header>
+
+          <main className="cc-app-main">
+            <div className="cc-app-main-inner">
+              <section className="cc-main-card">
+                <div
+                  style={{
+                    marginBottom: "1rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="cc-cta-button cc-cta-button--secondary"
+                    style={{ width: "100%" }}
+                    onClick={() => {
+                      // back from results → reset and go to wizard
+                      resetAppState();
+                      setMobileStage("form");
+                    }}
+                  >
+                    ← Back to search
+                  </button>
+                </div>
+
+                {detailsError && (
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      marginTop: "6px",
+                      color: "#b91c1c",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {detailsError}
+                  </p>
+                )}
+
+                {!loadingDetails && !hasWeather && !detailsError && (
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      margin: "0 0 6px 0",
+                      opacity: 0.8,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Weather data isn&apos;t available yet for this sailing —
+                    showing itinerary only.
+                  </p>
+                )}
+
+                <div className="cc-weather-panel">
+                  <WeatherTimeline itinerary={itinerary} />
+                </div>
+
+                <div className="cc-cruise-summary">
+                  <div className="cc-cruise-summary-title">
+                    {selectedCruise.title}
+                    {selectedCruise.shipName
+                      ? ` · Ship: ${selectedCruise.shipName}`
+                      : ""}
+                    {selectedCruise.cruiseLine
+                      ? ` · Line: ${selectedCruise.cruiseLine}`
+                      : ""}
+                  </div>
+                  <div>
+                    Weather combines live forecasts from Tomorrow.io with 30-year
+                    climate normals from NOAA. Peach cards show live forecasts;
+                    indigo cards show long-term averages.
+                  </div>
+
+                  <SaveCruiseButton
+                    cruise={selectedCruise}
+                    sailDate={currentSailDate ?? selectedCruise.departIso}
+                  />
+                </div>
+              </section>
+            </div>
+          </main>
+
+          <footer className="cc-app-footer">
+            v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io
+            and NOAA NCEI.
+          </footer>
+        </div>
+      </>
+    );
+  }
+
+  // ---------------- MAIN APP UI (desktop + mobile form stage) ----------------
+  return (
+    <>
+      <CloudBackground />
+      <div className="absolute right-4 top-4 z-50">
+        <AuthPanel />
+      </div>
+
       <div className="cc-app">
         {(loadingSearch || loadingDetails) && (
           <Spinner
             message={
-              loadingSearch
-                ? "Searching sailings..."
-                : "Loading cruise details..."
+              loadingSearch ? "Searching sailings..." : "Loading cruise details..."
             }
           />
         )}
@@ -339,80 +494,106 @@ export default function App() {
             alt="CruiseCast"
             className="cc-app-logo"
           />
-          <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+
+          <div className="cc-app-tagline">
+            PLAN AHEAD • SAIL SMART
+            <div className="cc-app-subtitle">
+              Forecast your cruise day by day — itineraries from real sailings,
+              weather from Tomorrow.io and NOAA climate normals.
+            </div>
+          </div>
         </header>
 
         <main className="cc-app-main">
           <div className="cc-app-main-inner">
             <section className="cc-main-card">
-              <div
-                style={{
-                  marginBottom: "1rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                }}
-              >
-                <button
-                  type="button"
-                  className="cc-cta-button cc-cta-button--secondary"
-                  style={{ width: "100%" }}
-                  onClick={() => {
-                    // back from results → reset and go to wizard
+              <h1 className="cc-main-title">Check Your Cruise Weather</h1>
+
+              {isMobile ? (
+                <MobileCruiseWizard
+                  onSubmit={handleCruiseSubmit}
+                  onBackToHome={() => {
                     resetAppState();
-                    setMobileStage("form");
+                    setView("home");
                   }}
-                >
-                  ← Back to search
-                </button>
-              </div>
-
-              {detailsError && (
-                <p
-                  style={{
-                    fontSize: "12px",
-                    marginTop: "6px",
-                    color: "#b91c1c",
-                    fontWeight: 500,
-                  }}
-                >
-                  {detailsError}
-                </p>
+                />
+              ) : (
+                <CruiseForm onSubmit={handleCruiseSubmit} />
               )}
 
-              {!loadingDetails && !hasWeather && !detailsError && (
-                <p
-                  style={{
-                    fontSize: "11px",
-                    margin: "0 0 6px 0",
-                    opacity: 0.8,
-                    fontStyle: "italic",
-                  }}
-                >
-                  Weather data isn&apos;t available yet for this sailing —
-                  showing itinerary only.
-                </p>
-              )}
+              {error && <p className="cc-main-error">{error}</p>}
 
-              <div className="cc-weather-panel">
-                <WeatherTimeline itinerary={itinerary} />
-              </div>
+              {/* Saved cruises list (only shows when logged in) */}
+              <SavedCruises onSelectSaved={handleSelectSavedCruise} />
 
-              <div className="cc-cruise-summary">
-                <div className="cc-cruise-summary-title">
-                  {selectedCruise.title}
-                  {selectedCruise.shipName
-                    ? ` · Ship: ${selectedCruise.shipName}`
-                    : ""}
-                  {selectedCruise.cruiseLine
-                    ? ` · Line: ${selectedCruise.cruiseLine}`
-                    : ""}
-                </div>
-                <div>
-                  Weather combines live forecasts from Tomorrow.io with 30-year
-                  climate normals from NOAA. Peach cards show live forecasts;
-                  indigo cards show long-term averages.
-                </div>
+              <div className="cc-itinerary-wrapper">
+                {selectedCruise ? (
+                  <>
+                    {detailsError && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          marginTop: "6px",
+                          color: "#b91c1c",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {detailsError}
+                      </p>
+                    )}
+
+                    {!loadingDetails && !hasWeather && !detailsError && (
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          margin: "0 0 6px 0",
+                          opacity: 0.8,
+                          fontStyle: "italic",
+                        }}
+                      >
+                        Weather data isn&apos;t available yet for this sailing —
+                        showing itinerary only.
+                      </p>
+                    )}
+
+                    {/* On desktop we still show timeline under the form.
+                        On mobile, results live on their own screen. */}
+                    {!isMobile && (
+                      <>
+                        <div className="cc-weather-panel">
+                          <WeatherTimeline itinerary={itinerary} />
+                        </div>
+
+                        <div className="cc-cruise-summary">
+                          <div className="cc-cruise-summary-title">
+                            {selectedCruise.title}
+                            {selectedCruise.shipName
+                              ? ` · Ship: ${selectedCruise.shipName}`
+                              : ""}
+                            {selectedCruise.cruiseLine
+                              ? ` · Line: ${selectedCruise.cruiseLine}`
+                              : ""}
+                          </div>
+                          <div>
+                            Weather combines live forecasts from Tomorrow.io with
+                            30-year climate normals from NOAA. Peach cards show
+                            live forecasts; indigo cards show long-term
+                            averages.
+                          </div>
+
+                          <SaveCruiseButton
+                            cruise={selectedCruise}
+                            sailDate={currentSailDate ?? selectedCruise.departIso}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="cc-empty-title">Your cruise, day by day.</h2>
+                  </>
+                )}
               </div>
             </section>
           </div>
@@ -423,126 +604,6 @@ export default function App() {
           NOAA NCEI.
         </footer>
       </div>
-    );
-  }
-
-  // ---------------- MAIN APP UI (desktop + mobile form stage) ----------------
-  return (
-    <div className="cc-app">
-      {(loadingSearch || loadingDetails) && (
-        <Spinner
-          message={
-            loadingSearch ? "Searching sailings..." : "Loading cruise details..."
-          }
-        />
-      )}
-
-      <header className="cc-app-header">
-        <img
-          src="/cruisecast-logo.webp"
-          alt="CruiseCast"
-          className="cc-app-logo"
-        />
-
-        <div className="cc-app-tagline">
-          PLAN AHEAD • SAIL SMART
-          <div className="cc-app-subtitle">
-            Forecast your cruise day by day — itineraries from real sailings,
-            weather from Tomorrow.io and NOAA climate normals.
-          </div>
-        </div>
-      </header>
-
-      <main className="cc-app-main">
-        <div className="cc-app-main-inner">
-          <section className="cc-main-card">
-            <h1 className="cc-main-title">Check Your Cruise Weather</h1>
-
-            {isMobile ? (
-              <MobileCruiseWizard
-                onSubmit={handleCruiseSubmit}
-                onBackToHome={() => {
-                  resetAppState();
-                  setView("home");
-                }}
-              />
-            ) : (
-              <CruiseForm onSubmit={handleCruiseSubmit} />
-            )}
-
-            {error && <p className="cc-main-error">{error}</p>}
-
-            <div className="cc-itinerary-wrapper">
-              {selectedCruise ? (
-                <>
-                  {detailsError && (
-                    <p
-                      style={{
-                        fontSize: "12px",
-                        marginTop: "6px",
-                        color: "#b91c1c",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {detailsError}
-                    </p>
-                  )}
-
-                  {!loadingDetails && !hasWeather && !detailsError && (
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        margin: "0 0 6px 0",
-                        opacity: 0.8,
-                        fontStyle: "italic",
-                      }}
-                    >
-                      Weather data isn&apos;t available yet for this sailing —
-                      showing itinerary only.
-                    </p>
-                  )}
-
-                  {/* On desktop we still show timeline under the form.
-                      On mobile, the results live on their own screen. */}
-                  {!isMobile && (
-                    <>
-                      <div className="cc-weather-panel">
-                        <WeatherTimeline itinerary={itinerary} />
-                      </div>
-
-                      <div className="cc-cruise-summary">
-                        <div className="cc-cruise-summary-title">
-                          {selectedCruise.title}
-                          {selectedCruise.shipName
-                            ? ` · Ship: ${selectedCruise.shipName}`
-                            : ""}
-                          {selectedCruise.cruiseLine
-                            ? ` · Line: ${selectedCruise.cruiseLine}`
-                            : ""}
-                        </div>
-                        <div>
-                          Weather combines live forecasts from Tomorrow.io with
-                          30-year climate normals from NOAA. Peach cards show
-                          live forecasts; indigo cards show long-term averages.
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  <h2 className="cc-empty-title">Your cruise, day by day.</h2>
-                </>
-              )}
-            </div>
-          </section>
-        </div>
-      </main>
-
-      <footer className="cc-app-footer">
-        v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io and
-        NOAA NCEI.
-      </footer>
-    </div>
+    </>
   );
 }

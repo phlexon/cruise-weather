@@ -768,7 +768,7 @@ text-align: center;
 
 @media (max-width: 768px) {
   .cc-main-title {
-    font-size: 43px !important;
+    font-size: 38px !important;
     font-weight: 900 !important;
     color: #214a7e !important;
     text-align: center;
@@ -839,4 +839,48 @@ text-align: center;
   background: rgba(15, 23, 42, 0.15);
   display: inline-block;
 }
+
+/* === Animated cloud background === */
+
+/* === Extra-spaced cloud background (big gaps + diagonal drift) === */
+
+/* === Animated cloud background (individual clouds with real gaps) === */
+
+.cc-clouds-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* each cloud is its own absolutely-positioned element */
+.cc-cloud {
+  position: absolute;
+  height: auto;
+  transform: translate3d(0, 0, 0);
+  animation-name: cc-cloud-drift-single;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.cc-cloud img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* diagonal, slow drift */
+@keyframes cc-cloud-drift-single {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    /* move further and a bit more vertical for nicer motion */
+    transform: translate3d(-90vw, -10vh, 0);
+  }
+}
+
+
+
 
