@@ -13,6 +13,7 @@ import { getDailyForecastsForCity } from "./services/weather";
 import { getNceiStationForCity } from "./data/nceiStations";
 import { sampleItinerary } from "./data/mockData";
 import Spinner from "./components/Spinner";
+import MobileCruiseWizard from "./components/MobileCruiseWizard";
 
 // 👉 NEW: home screen
 import HomeScreen from "./screens/HomeScreen";
@@ -38,7 +39,7 @@ type ItineraryDay = {
 };
 
 export default function App() {
-  // 👉 NEW: simple view switcher
+  // 👉 simple view switcher (home vs main app)
   const [view, setView] = useState<"home" | "app">("home");
 
   const [searchResults, setSearchResults] = useState<CruiseSummary[]>([]);
@@ -63,10 +64,10 @@ export default function App() {
   // keep track of the sail date the user selected in the form/calendar
   const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
 
-  // ✅ NEW: auto-open when there is exactly one matching cruise
+  // ✅ auto-open when there is exactly one matching cruise
   const [shouldAutoOpenSingle, setShouldAutoOpenSingle] = useState(false);
 
-  // simple "isMobile" flag for header layout
+  // simple "isMobile" flag
   const [isMobile, setIsMobile] = useState<boolean>(
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
@@ -83,7 +84,7 @@ export default function App() {
       ? searchResults.findIndex((c) => c.id === selectedCruise.id)
       : null;
 
-  // ---------- SEARCH (called from form + calendar) ----------
+  // ---------- SEARCH (called from form + calendar/wizard) ----------
   const handleCruiseSubmit = async ({
     lineName,
     shipName,
@@ -417,7 +418,12 @@ export default function App() {
           <section className="cc-main-card">
             <h1 className="cc-main-title">Check Your Cruise Weather</h1>
 
-            <CruiseForm onSubmit={handleCruiseSubmit} />
+            {/* 💡 Desktop: original form, Mobile: 2-step wizard */}
+            {isMobile ? (
+              <MobileCruiseWizard onSubmit={handleCruiseSubmit} />
+            ) : (
+              <CruiseForm onSubmit={handleCruiseSubmit} />
+            )}
 
             {loadingSearch && (
               <p className="cc-main-status">Loading cruise data...</p>
