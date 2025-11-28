@@ -17,11 +17,13 @@ import Spinner from "./components/Spinner";
 import MobileCruiseWizard from "./components/MobileCruiseWizard";
 import HomeScreen from "./screens/HomeScreen";
 import CloudBackground from "./components/CloudBackground";
-import AuthPanel from "./components/AuthPanel";
 import SaveCruiseButton from "./components/SaveCruiseButton";
-import SavedCruises, {
-  type SavedCruiseSelection,
-} from "./components/SavedCruises";
+import type { SavedCruiseSelection } from "./components/SavedCruises";
+
+// NEW imports
+import AuthStatusBar from "./components/AuthStatusBar";
+import LoginScreen from "./screens/LoginScreen";
+import SavedCruisesScreen from "./screens/SavedCruisesScreen";
 
 type ItineraryDay = {
   day: number;
@@ -35,8 +37,10 @@ type ItineraryDay = {
   source?: "forecast" | "climatology";
 };
 
+type View = "home" | "app" | "login" | "saved";
+
 export default function App() {
-  const [view, setView] = useState<"home" | "app">("home");
+  const [view, setView] = useState<View>("home");
 
   const [searchResults, setSearchResults] = useState<CruiseSummary[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -124,7 +128,7 @@ export default function App() {
     }
   };
 
-  // when user clicks a saved cruise in the list
+  // when user clicks a saved cruise (from SavedCruisesScreen)
   const handleSelectSavedCruise = (saved: SavedCruiseSelection) => {
     setView("app");
     void handleCruiseSubmit({
@@ -325,57 +329,135 @@ export default function App() {
   }, [shouldAutoOpenSingle, searchResults, isMobile]);
 
   // ---------------- HOME SCREEN ----------------
-  if (view === "home") {
-    return (
-      <>
-        <CloudBackground />
-        <div
-          style={{
-            position: "fixed",
-            top: 16,
-            right: 16,
-            zIndex: 9999,
-          }}
-        >
-          <AuthPanel />
-        </div>
+if (view === "home") {
+  return (
+    <>
+      <CloudBackground />
+      <div className="cc-app cc-app--home">
+        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+
         <HomeScreen
           onFindCruise={() => {
             resetAppState();
             setView("app");
           }}
-          onLogin={() => {}}
+          onLogin={() => {
+            setView("login");
+          }}
         />
+      </div>
+    </>
+  );
+}
+
+
+
+  // ---------------- LOGIN SCREEN ----------------
+  if (view === "login") {
+  return (
+    <>
+      <CloudBackground />
+      <div className="cc-app">
+        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+
+        <header className="cc-app-header">
+          ...
+
+            <img
+              src="/cruisecast-logo.webp"
+              alt="CruiseCast"
+              className="cc-app-logo"
+            />
+            <div className="cc-app-tagline">
+              PLAN AHEAD • SAIL SMART
+              <div className="cc-app-subtitle">
+                Sign in to save upcoming cruises and quickly re-check their
+                weather.
+              </div>
+            </div>
+          </header>
+
+          <main className="cc-app-main">
+            <div className="cc-app-main-inner">
+             <LoginScreen
+  onBack={() => setView("home")}
+  onAuthSuccess={() => setView("saved")}  // go straight to Saved Searches
+/>
+
+            </div>
+          </main>
+
+          <footer className="cc-app-footer">
+            v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io
+            and NOAA NCEI.
+          </footer>
+        </div>
       </>
     );
   }
 
-  // ---------------- MOBILE RESULTS SCREEN ----------------
-  if (isMobile && mobileStage === "results" && selectedCruise) {
-    return (
-      <>
-        <CloudBackground />
-        <div
-          style={{
-            position: "fixed",
-            top: 16,
-            right: 16,
-            zIndex: 9999,
-          }}
-        >
-          <AuthPanel />
-        </div>
+// ---------------- SAVED CRUISES SCREEN ----------------
+if (view === "saved") {
+  return (
+    <>
+      <CloudBackground />
 
-        <div className="cc-app">
-          {(loadingSearch || loadingDetails) && (
-            <Spinner
-              message={
-                loadingSearch
-                  ? "Searching sailings..."
-                  : "Loading cruise details..."
-              }
-            />
-          )}
+      {/* cc-app MUST wrap the entire screen */}
+      <div className="cc-app">
+
+        {/* Auth bar goes INSIDE cc-app so spacing + shadows match */}
+        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+
+        <header className="cc-app-header">
+          <img
+            src="/assets/logo-cruisecast.png"
+            alt="CruiseCast Logo"
+            className="cc-app-logo"
+          />
+          <div className="cc-app-tagline">Plan ahead · Sail smart</div>
+        </header>
+
+        <main className="cc-app-main">
+          <div className="cc-app-main-inner">
+            <div className="cc-main-card">
+              <SavedCruisesScreen
+                onBack={() => setView("app")}
+                onSelectSaved={handleSelectSavedCruise}
+              />
+            </div>
+          </div>
+        </main>
+
+        <footer className="cc-app-footer">
+          © {new Date().getFullYear()} CruiseCast
+        </footer>
+      </div>
+    </>
+  );
+}
+
+
+  // ---------------- MOBILE RESULTS SCREEN ----------------
+  // ---------------- MOBILE RESULTS SCREEN ----------------
+if (isMobile && mobileStage === "results" && selectedCruise) {
+  return (
+    <>
+      <CloudBackground />
+      <div className="cc-app">
+        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+
+        {(loadingSearch || loadingDetails) && (
+
+        <Spinner
+          message={
+            loadingSearch
+              ? "Searching sailings..."
+              : "Loading cruise details..."
+          }
+        />
+      )}
+      ...
+
 
           <header className="cc-app-header">
             <img
@@ -397,17 +479,17 @@ export default function App() {
                     gap: "8px",
                   }}
                 >
-                  <button
-                    type="button"
-                    className="cc-cta-button cc-cta-button--secondary"
-                    style={{ width: "100%" }}
-                    onClick={() => {
-                      resetAppState();
-                      setMobileStage("form");
-                    }}
-                  >
-                    ← Back to search
-                  </button>
+                 <button
+  type="button"
+  className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
+  onClick={() => {
+    resetAppState();
+    setMobileStage("form");
+  }}
+>
+  ← Back to search
+</button>
+
                 </div>
 
                 {detailsError && (
@@ -476,25 +558,20 @@ export default function App() {
   }
 
   // ---------------- MAIN APP UI (desktop + mobile form stage) ----------------
-  return (
-    <>
-      <CloudBackground />
-      <div
-        style={{
-          position: "fixed",
-          top: 16,
-          right: 16,
-          zIndex: 9999,
-        }}
-      >
-        <AuthPanel />
-      </div>
+  // ---------------- MAIN APP UI (desktop + mobile form stage) ----------------
+return (
+  <>
+    <CloudBackground />
+    <div className="cc-app">
+      <AuthStatusBar onGoToSaved={() => setView("saved")} />
 
-      <div className="cc-app">
-        {(loadingSearch || loadingDetails) && (
+      {(loadingSearch || loadingDetails) && (
+
           <Spinner
             message={
-              loadingSearch ? "Searching sailings..." : "Loading cruise details..."
+              loadingSearch
+                ? "Searching sailings..."
+                : "Loading cruise details..."
             }
           />
         )}
@@ -518,6 +595,21 @@ export default function App() {
         <main className="cc-app-main">
           <div className="cc-app-main-inner">
             <section className="cc-main-card">
+              {/* Desktop back-to-home button */}
+              {!isMobile && (
+                <button
+  type="button"
+  className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
+  onClick={() => {
+    resetAppState();
+    setView("home");
+  }}
+>
+  ← Back to Home
+</button>
+
+              )}
+
               <h1 className="cc-main-title">Check Your Cruise Weather</h1>
 
               {isMobile ? (
@@ -534,8 +626,53 @@ export default function App() {
 
               {error && <p className="cc-main-error">{error}</p>}
 
-              <SavedCruises onSelectSaved={handleSelectSavedCruise} />
+              {/* SEARCH RESULTS LIST */}
+              <div className="cc-results-wrapper">
+                {loadingSearch && (
+                  <p className="cc-helper-text">Searching sailings…</p>
+                )}
 
+                {!loadingSearch && searchResults.length > 0 && (
+                  <div className="cc-results-grid">
+                    {searchResults.map((cruise, idx) => (
+                      <button
+                        key={`${cruise.shipName}-${cruise.departIso}-${idx}`}
+                        type="button"
+                        className={
+                          "cc-result-card" +
+                          (selectedCruise === cruise
+                            ? " cc-result-card--active"
+                            : "")
+                        }
+                        onClick={() => {
+                          void loadCruiseDetails(cruise);
+                          if (isMobile) {
+                            setMobileStage("results");
+                          }
+                        }}
+                      >
+                        <div className="cc-result-title">{cruise.title}</div>
+                        <div className="cc-result-meta">
+                          {cruise.cruiseLine} · {cruise.shipName} ·{" "}
+                          {cruise.departIso}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {!loadingSearch &&
+                  searchResults.length === 0 &&
+                  currentSailDate &&
+                  !error && (
+                    <p className="cc-helper-text">
+                      No sailings found yet for this ship. Try a different ship
+                      or check back later.
+                    </p>
+                  )}
+              </div>
+
+              {/* ITINERARY / WEATHER TIMELINE */}
               <div className="cc-itinerary-wrapper">
                 {selectedCruise ? (
                   <>
