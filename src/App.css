@@ -689,6 +689,16 @@ body {
   }
 }
 
+/* Home screen spacing fix */
+.cc-home-inner {
+  padding-top: 1.5rem !important; /* reduced from 4rem */
+}
+
+.cc-home-header {
+  margin-top: 0.5rem !important; /* reduced from 2.5rem */
+}
+
+
 .cc-home-logo-wrapper {
   position: relative;
   width: 140px;
