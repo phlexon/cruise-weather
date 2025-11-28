@@ -2,13 +2,32 @@
 import React from "react";
 import "./HomeScreen.css";
 import HomeLogo from "../components/HomeLogo";
+import { useAuth } from "../context/AuthContext";
 
 type HomeScreenProps = {
   onFindCruise: () => void;
   onLogin?: () => void;
+  onGoToAccount?: () => void; // NEW: handler for logged-in users
 };
 
-export default function HomeScreen({ onFindCruise, onLogin }: HomeScreenProps) {
+export default function HomeScreen({
+  onFindCruise,
+  onLogin,
+  onGoToAccount,
+}: HomeScreenProps) {
+  const { user } = useAuth();
+
+  // Choose what the second button should do
+  const handleAccountAction = () => {
+    if (user) {
+      // Logged-in user → send them to account screen (saved cruises)
+      onGoToAccount?.();
+    } else {
+      // Not logged in → send to login
+      onLogin?.();
+    }
+  };
+
   return (
     <div className="cc-home">
       <div className="cc-home-inner">
@@ -22,13 +41,14 @@ export default function HomeScreen({ onFindCruise, onLogin }: HomeScreenProps) {
           />
         </header>
 
-        {/* 🔆 Our animated sun + clouds icon */}
+        {/* 🔆 Animated sun + cloud icon */}
         <div className="cc-hero-wrapper">
           <HomeLogo />
         </div>
 
-        {/* Action buttons */}
+        {/* 🔘 Action buttons */}
         <div className="cc-home-actions">
+          {/* FIND MY CRUISE (unchanged) */}
           <button
             className="cc-cta cc-cta--border"
             onClick={onFindCruise}
@@ -37,12 +57,15 @@ export default function HomeScreen({ onFindCruise, onLogin }: HomeScreenProps) {
             <span className="cc-cta-icon">▶</span>
           </button>
 
+          {/* LOGIN / GO TO ACCOUNT (dynamic label) */}
           <button
             className="cc-cta cc-cta--border"
             type="button"
-            onClick={onLogin}
+            onClick={handleAccountAction}
           >
-            <span className="cc-cta-label">LOG IN</span>
+            <span className="cc-cta-label">
+              {user ? "GO TO ACCOUNT" : "LOG IN"}
+            </span>
             <span className="cc-cta-icon">▶</span>
           </button>
         </div>

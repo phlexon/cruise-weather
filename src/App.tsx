@@ -329,6 +329,7 @@ export default function App() {
   }, [shouldAutoOpenSingle, searchResults, isMobile]);
 
   // ---------------- HOME SCREEN ----------------
+// ---------------- HOME SCREEN ----------------
 if (view === "home") {
   return (
     <>
@@ -341,14 +342,14 @@ if (view === "home") {
             resetAppState();
             setView("app");
           }}
-          onLogin={() => {
-            setView("login");
-          }}
+          onLogin={() => setView("login")}
+          onGoToAccount={() => setView("saved")}
         />
       </div>
     </>
   );
 }
+
 
 
 
@@ -364,7 +365,7 @@ if (view === "home") {
           ...
 
             <img
-              src="/cruisecast-logo.webp"
+              src="/icons/logo.svg"
               alt="CruiseCast"
               className="cc-app-logo"
             />
@@ -410,7 +411,7 @@ if (view === "saved") {
 
         <header className="cc-app-header">
           <img
-            src="/assets/logo-cruisecast.png"
+            src="/icons/logo.svg"
             alt="CruiseCast Logo"
             className="cc-app-logo"
           />

@@ -18,23 +18,26 @@ export default function AuthStatusBar({ onGoToSaved }: AuthStatusBarProps) {
         Signed in as <strong>{user.email ?? "CruiseCast user"}</strong>
       </span>
 
-      {onGoToSaved && (
+      {/* ✅ This wrapper + classes are what the CSS expects */}
+      <div className="cc-auth-bar-buttons">
+        {onGoToSaved && (
+          <button
+            type="button"
+            className="cc-auth-bar-button"
+            onClick={onGoToSaved}
+          >
+            View Saved Cruises
+          </button>
+        )}
+
         <button
           type="button"
           className="cc-auth-bar-button"
-          onClick={onGoToSaved}
+          onClick={() => void signOut()}
         >
-          View saved cruises
+          Sign Out
         </button>
-      )}
-
-      <button
-        type="button"
-        className="cc-auth-bar-button"
-        onClick={() => void signOut()}
-      >
-        Sign out
-      </button>
+      </div>
     </div>
   );
 }
