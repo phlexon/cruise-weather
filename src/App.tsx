@@ -56,9 +56,23 @@ export default function App() {
     sampleItinerary as unknown as ItineraryDay[]
   );
 
+   const goToLogin = () => setView("login");
+  const goToAccount = () => setView("saved");
   const [hasWeather, setHasWeather] = useState(false);
   const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
   const [shouldAutoOpenSingle, setShouldAutoOpenSingle] = useState(false);
+  const [loginJustCompleted, setLoginJustCompleted] = useState(false);
+  useEffect(() => {
+  if (!loginJustCompleted) return;
+
+  const timer = setTimeout(() => {
+    setLoginJustCompleted(false);
+  }, 5000); // 5 seconds
+
+  return () => clearTimeout(timer);
+}, [loginJustCompleted]);
+
+
 
   // mobile detection
   const [isMobile, setIsMobile] = useState<boolean>(() =>
@@ -67,6 +81,11 @@ export default function App() {
 
   // mobile stage: wizard form vs full-screen results
   const [mobileStage, setMobileStage] = useState<"form" | "results">("form");
+
+    const goHome = () => {
+    resetAppState();
+    setView("home");
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -330,12 +349,17 @@ export default function App() {
 
   // ---------------- HOME SCREEN ----------------
 // ---------------- HOME SCREEN ----------------
+// ---------------- HOME SCREEN ----------------
 if (view === "home") {
   return (
     <>
       <CloudBackground />
       <div className="cc-app cc-app--home">
-        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+        <AuthStatusBar
+          onGoToSaved={goToAccount}
+          onLogin={goToLogin}
+          onCreateAccount={goToLogin}  // reuse Login screen for create
+        />
 
         <HomeScreen
           onFindCruise={() => {
@@ -353,61 +377,62 @@ if (view === "home") {
 
 
 
+
   // ---------------- LOGIN SCREEN ----------------
   if (view === "login") {
   return (
     <>
       <CloudBackground />
       <div className="cc-app">
-        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+      <AuthStatusBar
+          onGoToSaved={goToAccount}
+          onLogin={goToLogin}
+          onCreateAccount={goToLogin}  // reuse Login screen for create
+        />
 
         <header className="cc-app-header">
-          ...
+          <img
+            src="/cruisecast-logo.webp"
+            alt="CruiseCast"
+            className="cc-app-logo"
+            onClick={goHome}
+          />
+          <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+        </header>
 
-            <img
-              src="/icons/logo.svg"
-              alt="CruiseCast"
-              className="cc-app-logo"
-            />
-            <div className="cc-app-tagline">
-              PLAN AHEAD • SAIL SMART
-              <div className="cc-app-subtitle">
-                Sign in to save upcoming cruises and quickly re-check their
-                weather.
-              </div>
-            </div>
-          </header>
-
-          <main className="cc-app-main">
-            <div className="cc-app-main-inner">
-             <LoginScreen
+        <main className="cc-app-main">
+          <div className="cc-app-main-inner">
+            <div className="cc-main-card">
+              <LoginScreen
   onBack={() => setView("home")}
-  onAuthSuccess={() => setView("saved")}  // go straight to Saved Searches
+  onAuthSuccess={() => {
+    setLoginJustCompleted(true);  // ✅ mark that we just logged in
+    setView("saved");             // go to account dashboard
+  }}
 />
 
             </div>
-          </main>
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
 
-          <footer className="cc-app-footer">
-            v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io
-            and NOAA NCEI.
-          </footer>
-        </div>
-      </>
-    );
-  }
 
+// ---------------- SAVED CRUISES SCREEN ----------------
+// ---------------- SAVED CRUISES SCREEN ----------------
 // ---------------- SAVED CRUISES SCREEN ----------------
 if (view === "saved") {
   return (
     <>
       <CloudBackground />
-
-      {/* cc-app MUST wrap the entire screen */}
       <div className="cc-app">
-
-        {/* Auth bar goes INSIDE cc-app so spacing + shadows match */}
-        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+      <AuthStatusBar
+          onGoToSaved={goToAccount}
+          onLogin={goToLogin}
+          onCreateAccount={goToLogin}  // reuse Login screen for create
+        />
 
         <header className="cc-app-header">
           <img
@@ -421,6 +446,13 @@ if (view === "saved") {
         <main className="cc-app-main">
           <div className="cc-app-main-inner">
             <div className="cc-main-card">
+
+              {loginJustCompleted && (
+                <div className="cc-login-success-banner">
+                  Thank you for logging in. Your saved cruises are below.
+                </div>
+              )}
+
               <SavedCruisesScreen
                 onBack={() => setView("app")}
                 onSelectSaved={handleSelectSavedCruise}
@@ -438,6 +470,8 @@ if (view === "saved") {
 }
 
 
+
+
   // ---------------- MOBILE RESULTS SCREEN ----------------
   // ---------------- MOBILE RESULTS SCREEN ----------------
 if (isMobile && mobileStage === "results" && selectedCruise) {
@@ -445,118 +479,123 @@ if (isMobile && mobileStage === "results" && selectedCruise) {
     <>
       <CloudBackground />
       <div className="cc-app">
-        <AuthStatusBar onGoToSaved={() => setView("saved")} />
+     <AuthStatusBar
+          onGoToSaved={goToAccount}
+          onLogin={goToLogin}
+          onCreateAccount={goToLogin}  // reuse Login screen for create
+        />
 
         {(loadingSearch || loadingDetails) && (
+          <Spinner
+            message={
+              loadingSearch
+                ? "Searching sailings..."
+                : "Loading cruise details..."
+            }
+          />
+        )}
 
-        <Spinner
-          message={
-            loadingSearch
-              ? "Searching sailings..."
-              : "Loading cruise details..."
-          }
-        />
-      )}
-      ...
+        <header className="cc-app-header">
+          <img
+  src="/cruisecast-logo.webp"
+  className="cc-app-logo"
+  onClick={goHome}
+  style={{ cursor: "pointer" }}
+/>
 
+          <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+        </header>
 
-          <header className="cc-app-header">
-            <img
-              src="/cruisecast-logo.webp"
-              alt="CruiseCast"
-              className="cc-app-logo"
-            />
-            <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
-          </header>
-
-          <main className="cc-app-main">
-            <div className="cc-app-main-inner">
-              <section className="cc-main-card">
-                <div
-                  style={{
-                    marginBottom: "1rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
+        <main className="cc-app-main">
+          <div className="cc-app-main-inner">
+            <section className="cc-main-card">
+              <div
+                style={{
+                  marginBottom: "1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                <button
+                  type="button"
+                  className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
+                  onClick={() => {
+                    resetAppState();
+                    setMobileStage("form");
                   }}
                 >
-                 <button
-  type="button"
-  className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
-  onClick={() => {
-    resetAppState();
-    setMobileStage("form");
-  }}
->
-  ← Back to search
-</button>
+                  ← Back to search
+                </button>
+              </div>
 
+              {detailsError && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    marginTop: "6px",
+                    color: "#b91c1c",
+                    fontWeight: 500,
+                  }}
+                >
+                  {detailsError}
+                </p>
+              )}
+
+              {!loadingDetails && !hasWeather && !detailsError && (
+                <p
+                  style={{
+                    fontSize: "11px",
+                    margin: "0 0 6px 0",
+                    opacity: 0.8,
+                    fontStyle: "italic",
+                  }}
+                >
+                  Weather data isn&apos;t available yet for this sailing —
+                  showing itinerary only.
+                </p>
+              )}
+
+              <div className="cc-weather-panel">
+                <WeatherTimeline itinerary={itinerary} />
+              </div>
+
+              <div className="cc-cruise-summary">
+                <div className="cc-cruise-summary-title">
+                  {selectedCruise.title}
+                  {selectedCruise.shipName
+                    ? ` · Ship: ${selectedCruise.shipName}`
+                    : ""}
+                  {selectedCruise.cruiseLine
+                    ? ` · Line: ${selectedCruise.cruiseLine}`
+                    : ""}
                 </div>
 
-                {detailsError && (
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      marginTop: "6px",
-                      color: "#b91c1c",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {detailsError}
-                  </p>
-                )}
-
-                {!loadingDetails && !hasWeather && !detailsError && (
-                  <p
-                    style={{
-                      fontSize: "11px",
-                      margin: "0 0 6px 0",
-                      opacity: 0.8,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    Weather data isn&apos;t available yet for this sailing —
-                    showing itinerary only.
-                  </p>
-                )}
-
-                <div className="cc-weather-panel">
-                  <WeatherTimeline itinerary={itinerary} />
+                <div>
+                  Weather combines live forecasts from Tomorrow.io with
+                  30-year climate normals from NOAA. Peach cards show live
+                  forecasts; indigo cards show long-term averages.
                 </div>
 
-                <div className="cc-cruise-summary">
-                  <div className="cc-cruise-summary-title">
-                    {selectedCruise.title}
-                    {selectedCruise.shipName
-                      ? ` · Ship: ${selectedCruise.shipName}`
-                      : ""}
-                    {selectedCruise.cruiseLine
-                      ? ` · Line: ${selectedCruise.cruiseLine}`
-                      : ""}
-                  </div>
-                  <div>
-                    Weather combines live forecasts from Tomorrow.io with 30-year
-                    climate normals from NOAA. Peach cards show live forecasts;
-                    indigo cards show long-term averages.
-                  </div>
+                {/* 👇 ADD THIS for mobile save */}
+                <SaveCruiseButton
+                  cruise={selectedCruise}
+                  sailDate={currentSailDate ?? selectedCruise.departIso}
+                />
+              </div>
+            </section>
+          </div>
+        </main>
 
-                  <SaveCruiseButton
-                    cruise={selectedCruise}
-                    sailDate={currentSailDate ?? selectedCruise.departIso}
-                  />
-                </div>
-              </section>
-            </div>
-          </main>
+        <footer className="cc-app-footer">
+          v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io
+          and NOAA NCEI.
+        </footer>
+      </div>
+    </>
+  );
+}
 
-          <footer className="cc-app-footer">
-            v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io
-            and NOAA NCEI.
-          </footer>
-        </div>
-      </>
-    );
-  }
 
   // ---------------- MAIN APP UI (desktop + mobile form stage) ----------------
   // ---------------- MAIN APP UI (desktop + mobile form stage) ----------------
@@ -564,8 +603,11 @@ return (
   <>
     <CloudBackground />
     <div className="cc-app">
-      <AuthStatusBar onGoToSaved={() => setView("saved")} />
-
+      <AuthStatusBar
+          onGoToSaved={goToAccount}
+          onLogin={goToLogin}
+          onCreateAccount={goToLogin}  // reuse Login screen for create
+        />
       {(loadingSearch || loadingDetails) && (
 
           <Spinner
@@ -578,11 +620,13 @@ return (
         )}
 
         <header className="cc-app-header">
-          <img
-            src="/cruisecast-logo.webp"
-            alt="CruiseCast"
-            className="cc-app-logo"
-          />
+      <img
+  src="/cruisecast-logo.webp"
+  className="cc-app-logo"
+  onClick={goHome}
+  style={{ cursor: "pointer" }}
+/>
+
 
           <div className="cc-app-tagline">
             PLAN AHEAD • SAIL SMART

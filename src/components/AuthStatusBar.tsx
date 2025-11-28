@@ -4,39 +4,79 @@ import { useAuth } from "../context/AuthContext";
 
 type AuthStatusBarProps = {
   onGoToSaved?: () => void;
+  onLogin?: () => void;
+  onCreateAccount?: () => void;
 };
 
-export default function AuthStatusBar({ onGoToSaved }: AuthStatusBarProps) {
+export default function AuthStatusBar({
+  onGoToSaved,
+  onLogin,
+  onCreateAccount,
+}: AuthStatusBarProps) {
   const { user, signOut } = useAuth();
 
-  // If not signed in, don't render anything
-  if (!user) return null;
+  const emailLabel = user?.email ?? "CruiseCast user";
 
-  return (
-    <div className="cc-auth-bar">
-      <span>
-        Signed in as <strong>{user.email ?? "CruiseCast user"}</strong>
-      </span>
+  // ----------------------------
+  // LOGGED-IN VIEW
+  // ----------------------------
+  if (user) {
+    return (
+      <div className="cc-auth-bar">
+        <span className="cc-auth-bar-text">
+          Signed in as <strong>{emailLabel}</strong>
+        </span>
 
-      {/* ✅ This wrapper + classes are what the CSS expects */}
-      <div className="cc-auth-bar-buttons">
-        {onGoToSaved && (
+        <div className="cc-auth-bar-actions">
+          {onGoToSaved && (
+            <button
+              type="button"
+              className="cc-auth-bar-button"
+              onClick={onGoToSaved}
+            >
+              Saved Cruises
+            </button>
+          )}
+
           <button
             type="button"
             className="cc-auth-bar-button"
-            onClick={onGoToSaved}
+            onClick={() => void signOut()}
           >
-            View Saved Cruises
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ----------------------------
+  // LOGGED-OUT VIEW
+  // ----------------------------
+  return (
+    <div className="cc-auth-bar">
+      <span className="cc-auth-bar-text">You're not signed in.</span>
+
+      <div className="cc-auth-bar-actions">
+        {onLogin && (
+          <button
+            type="button"
+            className="cc-auth-bar-button"
+            onClick={onLogin}
+          >
+            Log In
           </button>
         )}
 
-        <button
-          type="button"
-          className="cc-auth-bar-button"
-          onClick={() => void signOut()}
-        >
-          Sign Out
-        </button>
+        {onCreateAccount && (
+          <button
+            type="button"
+            className="cc-auth-bar-button cc-auth-bar-button--primary"
+            onClick={onCreateAccount}
+          >
+            Create Account
+          </button>
+        )}
       </div>
     </div>
   );

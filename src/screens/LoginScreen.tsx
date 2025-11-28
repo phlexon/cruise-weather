@@ -7,13 +7,19 @@ type LoginScreenProps = {
   onAuthSuccess: () => void; // App decides what to show next
 };
 
-export default function LoginScreen({ onBack, onAuthSuccess }: LoginScreenProps) {
+export default function LoginScreen({
+  onBack,
+  onAuthSuccess,
+}: LoginScreenProps) {
   const { signIn, signUp } = useAuth();
 
   // Sign In fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  // ✅ Success message for sign-in / sign-up
+  const [success, setSuccess] = useState("");
 
   // Create Account fields
   const [newEmail, setNewEmail] = useState("");
@@ -22,21 +28,35 @@ export default function LoginScreen({ onBack, onAuthSuccess }: LoginScreenProps)
 
   async function handleSignIn() {
     setError("");
+    setSuccess("");
+
     const { error } = await signIn(email, password);
+
     if (error) {
       setError(error.message);
     } else {
-      onAuthSuccess();
+      // Show message on this screen, then jump to account
+      setSuccess("Thank you for logging in! Redirecting to your account…");
+      setTimeout(() => {
+        onAuthSuccess();
+      }, 1200);
     }
   }
 
   async function handleCreateAccount() {
     setCreateError("");
+    setSuccess("");
+
     const { error } = await signUp(newEmail, newPassword);
+
     if (error) {
       setCreateError(error.message);
     } else {
-      onAuthSuccess();
+      // You can tweak this copy if you want something different
+      setSuccess("Account created! You’re now logged in.");
+      setTimeout(() => {
+        onAuthSuccess();
+      }, 1200);
     }
   }
 
@@ -45,15 +65,13 @@ export default function LoginScreen({ onBack, onAuthSuccess }: LoginScreenProps)
       <div className="cc-auth-wrapper">
         <section className="cc-main-card cc-login-card">
           {/* BACK BUTTON */}
-         <button
-  onClick={onBack}
-  className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
-  type="button"
->
-  ← Back to Home
-</button>
-
-
+          <button
+            onClick={onBack}
+            className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
+            type="button"
+          >
+            ← Back to Home
+          </button>
 
           {/* TWO-COLUMN LAYOUT */}
           <div className="cc-login-grid">
@@ -83,6 +101,9 @@ export default function LoginScreen({ onBack, onAuthSuccess }: LoginScreenProps)
               />
 
               {error && <div className="cc-login-error">{error}</div>}
+              {success && (
+                <div className="cc-login-success">{success}</div>
+              )}
 
               <button
                 onClick={handleSignIn}
@@ -99,8 +120,8 @@ export default function LoginScreen({ onBack, onAuthSuccess }: LoginScreenProps)
 
               <p className="cc-login-desc">
                 Creating an account lets you save your favorite cruises and
-                quickly re-check their weather at any time. All your
-                forecasts stay synced and easy to access across devices.
+                quickly re-check their weather at any time. All your forecasts
+                stay synced and easy to access across devices.
               </p>
 
               <label className="cc-label">Email</label>
@@ -121,6 +142,9 @@ export default function LoginScreen({ onBack, onAuthSuccess }: LoginScreenProps)
 
               {createError && (
                 <div className="cc-login-error">{createError}</div>
+              )}
+              {success && !createError && (
+                <div className="cc-login-success">{success}</div>
               )}
 
               <button

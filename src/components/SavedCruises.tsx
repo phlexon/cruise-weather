@@ -46,11 +46,8 @@ export default function SavedCruises({ onSelectSaved }: SavedCruisesProps) {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        setErrorMsg(error.message);
-      } else if (data) {
-        setRows(data as SavedCruiseRow[]);
-      }
+      if (error) setErrorMsg(error.message);
+      else if (data) setRows(data as SavedCruiseRow[]);
 
       setLoading(false);
     };
@@ -61,32 +58,25 @@ export default function SavedCruises({ onSelectSaved }: SavedCruisesProps) {
   if (!user) return null;
 
   return (
-    <div className="mt-4 bg-slate-900/70 border border-slate-800 rounded-2xl p-4 text-slate-50">
-      <h2 className="text-sm font-semibold mb-2">Saved cruises</h2>
+    <div className="cc-saved-container">
+      <h2 className="cc-saved-title">Saved cruises</h2>
 
-      {loading && <p className="text-xs text-slate-300">Loading your cruises…</p>}
-      {errorMsg && (
-        <p className="text-xs text-red-400 mb-1 leading-snug">{errorMsg}</p>
-      )}
-
+      {loading && <p className="cc-saved-loading">Loading your cruises…</p>}
+      {errorMsg && <p className="cc-saved-error">{errorMsg}</p>}
       {!loading && !rows.length && !errorMsg && (
-        <p className="text-xs text-slate-300">
-          You haven&apos;t saved any cruises yet.
-        </p>
+        <p className="cc-saved-empty">You haven’t saved any cruises yet.</p>
       )}
 
-      <div className="space-y-2">
+      <div className="cc-saved-list">
         {rows.map((row) => {
-          const lineLabel =
-            (row.line_name ?? row.line_id) || "Cruise line";
-          const shipLabel =
-            (row.ship_name ?? row.ship_id) || "Ship";
+          const lineLabel = row.line_name ?? row.line_id;
+          const shipLabel = row.ship_name ?? row.ship_id;
 
           return (
             <button
               key={row.id}
               type="button"
-              className="w-full text-left rounded-xl bg-slate-800/80 hover:bg-slate-700/80 px-3 py-2 text-xs"
+              className="cc-saved-item"
               onClick={() =>
                 onSelectSaved({
                   lineId: row.line_id,
@@ -97,10 +87,11 @@ export default function SavedCruises({ onSelectSaved }: SavedCruisesProps) {
                 })
               }
             >
-              <div className="font-semibold text-slate-50">
+              <div className="cc-saved-item-title">
                 {lineLabel} — {shipLabel}
               </div>
-              <div className="text-slate-300">
+
+              <div className="cc-saved-item-date">
                 Sail date:{" "}
                 {new Date(row.sail_date).toLocaleDateString(undefined, {
                   month: "short",
