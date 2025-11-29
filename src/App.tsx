@@ -19,11 +19,17 @@ import HomeScreen from "./screens/HomeScreen";
 import CloudBackground from "./components/CloudBackground";
 import SaveCruiseButton from "./components/SaveCruiseButton";
 import type { SavedCruiseSelection } from "./components/SavedCruises";
+import LoginScreen from "./screens/LoginScreen";
+import CreateAccountScreen from "./screens/CreateAccountScreen";
+
 
 // NEW imports
 import AuthStatusBar from "./components/AuthStatusBar";
-import LoginScreen from "./screens/LoginScreen";
 import SavedCruisesScreen from "./screens/SavedCruisesScreen";
+import { useAuth } from "./context/AuthContext";
+
+
+// …existing imports above…
 
 type ItineraryDay = {
   day: number;
@@ -37,10 +43,31 @@ type ItineraryDay = {
   source?: "forecast" | "climatology";
 };
 
-type View = "home" | "app" | "login" | "saved";
+type View = "home" | "app" | "saved" | "login" | "createAccount";
+
 
 export default function App() {
+  const { user } = useAuth();
   const [view, setView] = useState<View>("home");
+  // ...any other state...
+
+  const [loginJustCompleted, setLoginJustCompleted] = useState(false);
+
+useEffect(() => {
+  if (!loginJustCompleted) return;
+
+  // Show message for longer — 3.5 seconds
+  const timer = setTimeout(() => {
+    setLoginJustCompleted(false);
+  }, 3500);
+
+  return () => clearTimeout(timer);
+}, [loginJustCompleted]);
+
+
+  const shouldShowAuthBar =
+    user && view !== "login" && view !== "createAccount";
+
 
   const [searchResults, setSearchResults] = useState<CruiseSummary[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -52,6 +79,9 @@ export default function App() {
   const [selectedCruise, setSelectedCruise] = useState<CruiseSummary | null>(
     null
   );
+
+  // …rest of your state + hooks…
+
   const [itinerary, setItinerary] = useState<ItineraryDay[]>(
     sampleItinerary as unknown as ItineraryDay[]
   );
@@ -59,19 +89,10 @@ export default function App() {
    const goToLogin = () => setView("login");
   const goToAccount = () => setView("saved");
   const [hasWeather, setHasWeather] = useState(false);
-  const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
-  const [shouldAutoOpenSingle, setShouldAutoOpenSingle] = useState(false);
-  const [loginJustCompleted, setLoginJustCompleted] = useState(false);
-  useEffect(() => {
-  if (!loginJustCompleted) return;
+const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
 
-  const timer = setTimeout(() => {
-    setLoginJustCompleted(false);
-  }, 5000); // 5 seconds
-
-  return () => clearTimeout(timer);
-}, [loginJustCompleted]);
-
+// ⬇️ ADD THIS BACK
+const [shouldAutoOpenSingle, setShouldAutoOpenSingle] = useState(false);
 
 
   // mobile detection
@@ -332,6 +353,17 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+  if (loginJustCompleted) {
+    const timer = setTimeout(() => {
+      setLoginJustCompleted(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }
+}, [loginJustCompleted]);
+
+
   // auto-open when exactly 1 cruise matches
   useEffect(() => {
     if (!shouldAutoOpenSingle) return;
@@ -349,17 +381,27 @@ export default function App() {
 
   // ---------------- HOME SCREEN ----------------
 // ---------------- HOME SCREEN ----------------
-// ---------------- HOME SCREEN ----------------
 if (view === "home") {
   return (
     <>
       <CloudBackground />
+
+      {/* ✅ Success toast sits above the app shell */}
+      {loginJustCompleted && (
+        <div className="cc-success-toast">
+          🎉 You’re signed in — welcome back!
+        </div>
+      )}
+
       <div className="cc-app cc-app--home">
-        <AuthStatusBar
-          onGoToSaved={goToAccount}
-          onLogin={goToLogin}
-          onCreateAccount={goToLogin}  // reuse Login screen for create
-        />
+        {/* ✅ Show AuthStatusBar ONLY if user is logged in */}
+        {user && (
+          <AuthStatusBar
+            onGoToSaved={() => setView("saved")}
+            onLogin={() => setView("login")}
+            onCreateAccount={() => setView("createAccount")}
+          />
+        )}
 
         <HomeScreen
           onFindCruise={() => {
@@ -378,46 +420,87 @@ if (view === "home") {
 
 
 
+
   // ---------------- LOGIN SCREEN ----------------
-  if (view === "login") {
+if (view === "login") {
   return (
     <>
       <CloudBackground />
       <div className="cc-app">
-      <AuthStatusBar
-          onGoToSaved={goToAccount}
-          onLogin={goToLogin}
-          onCreateAccount={goToLogin}  // reuse Login screen for create
-        />
+        {/* no AuthStatusBar here, since you hid it */}
 
         <header className="cc-app-header">
           <img
-            src="/cruisecast-logo.webp"
-            alt="CruiseCast"
+            src="/icons/logo.svg"
+            alt="CruiseCast Logo"
             className="cc-app-logo"
-            onClick={goHome}
           />
-          <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+          <div className="cc-app-tagline">Plan ahead · Sail smart</div>
         </header>
 
         <main className="cc-app-main">
           <div className="cc-app-main-inner">
-            <div className="cc-main-card">
-              <LoginScreen
-  onBack={() => setView("home")}
-  onAuthSuccess={() => {
-    setLoginJustCompleted(true);  // ✅ mark that we just logged in
-    setView("saved");             // go to account dashboard
-  }}
-/>
-
-            </div>
+            <LoginScreen
+              onBack={() => setView("home")}
+              onAuthSuccess={() => {
+                setLoginJustCompleted(true);  // ✅ trigger success banner
+                setView("home");              // go back to home
+              }}
+              onGoToCreate={() => setView("createAccount")}
+            />
           </div>
         </main>
       </div>
     </>
   );
 }
+
+
+// ---------------- CREATE ACCOUNT SCREEN ----------------
+if (view === "createAccount") {
+  const goHome = () => {
+    resetAppState();
+    setView("home");
+  };
+
+  return (
+    <>
+      <CloudBackground />
+      <div className="cc-app">
+        <AuthStatusBar
+          onGoToSaved={() => setView("saved")}
+          onLogin={() => setView("login")}              // top Log In button
+          onCreateAccount={() => setView("createAccount")}
+        />
+
+        <header className="cc-app-header">
+          <img
+            src="/icons/logo.svg"
+            alt="CruiseCast Logo"
+            className="cc-app-logo cc-app-logo--clickable"
+            onClick={goHome}          // 👈 logo -> home here too
+          />
+          <div className="cc-app-tagline">Plan ahead · Sail smart</div>
+        </header>
+
+        <main className="cc-app-main">
+          <div className="cc-app-main-inner">
+            {/* Again, no extra cc-main-card wrapper */}
+            <CreateAccountScreen
+              onBack={goHome}
+              onAuthSuccess={() => {
+                setLoginJustCompleted(true);
+                setView("home");
+              }}
+              onGoToLogin={() => setView("login")}
+            />
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
+
 
 
 // ---------------- SAVED CRUISES SCREEN ----------------
@@ -428,10 +511,10 @@ if (view === "saved") {
     <>
       <CloudBackground />
       <div className="cc-app">
-      <AuthStatusBar
-          onGoToSaved={goToAccount}
-          onLogin={goToLogin}
-          onCreateAccount={goToLogin}  // reuse Login screen for create
+            <AuthStatusBar
+          onGoToSaved={() => setView("saved")}
+          onLogin={() => setView("login")}
+          onCreateAccount={() => setView("createAccount")}  // top button
         />
 
         <header className="cc-app-header">
@@ -479,10 +562,10 @@ if (isMobile && mobileStage === "results" && selectedCruise) {
     <>
       <CloudBackground />
       <div className="cc-app">
-     <AuthStatusBar
-          onGoToSaved={goToAccount}
-          onLogin={goToLogin}
-          onCreateAccount={goToLogin}  // reuse Login screen for create
+          <AuthStatusBar
+          onGoToSaved={() => setView("saved")}
+          onLogin={() => setView("login")}
+          onCreateAccount={() => setView("createAccount")}  // top button
         />
 
         {(loadingSearch || loadingDetails) && (
@@ -603,10 +686,10 @@ return (
   <>
     <CloudBackground />
     <div className="cc-app">
-      <AuthStatusBar
-          onGoToSaved={goToAccount}
-          onLogin={goToLogin}
-          onCreateAccount={goToLogin}  // reuse Login screen for create
+            <AuthStatusBar
+          onGoToSaved={() => setView("saved")}
+          onLogin={() => setView("login")}
+          onCreateAccount={() => setView("createAccount")}  // top button
         />
       {(loadingSearch || loadingDetails) && (
 

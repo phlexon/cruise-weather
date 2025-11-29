@@ -1,41 +1,41 @@
-// src/screens/LoginScreen.tsx
+// src/screens/CreateAccountScreen.tsx
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-type LoginScreenProps = {
+type CreateAccountScreenProps = {
   onBack: () => void;
   onAuthSuccess: () => void;
-  onGoToCreate: () => void;
+  onGoToLogin: () => void;
 };
 
-export default function LoginScreen({
+export default function CreateAccountScreen({
   onBack,
   onAuthSuccess,
-  onGoToCreate,
-}: LoginScreenProps) {
-  const { signIn } = useAuth();
+  onGoToLogin,
+}: CreateAccountScreenProps) {
+  const { signUp } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  async function handleSignIn() {
+  async function handleCreate() {
     setError("");
 
     try {
-      const result = await signIn(email, password);
+      const result = await signUp(email, password);
 
-      // Handle null / undefined result safely
+      // Handle null / undefined or { error } safely
       const authError = (result as any)?.error ?? null;
 
       if (authError) {
-        setError(authError.message ?? "Unable to sign in.");
+        setError(authError.message ?? "Unable to create your account.");
       } else {
         onAuthSuccess();
       }
     } catch (e: any) {
-      console.error("Sign-in failed:", e);
-      setError(e?.message ?? "Something went wrong signing you in.");
+      console.error("Create account failed:", e);
+      setError(e?.message ?? "Something went wrong creating your account.");
     }
   }
 
@@ -51,11 +51,11 @@ export default function LoginScreen({
       </button>
 
       <div className="cc-auth-content">
-        <h2 className="cc-login-title">Sign in to CruiseCast</h2>
+        <h2 className="cc-login-title">Create your CruiseCast account</h2>
 
         <p className="cc-login-desc">
-          Use your email and a password to save sailings you care about. You can
-          return anytime and reload their forecast instantly.
+          Creating an account lets you save cruises and quickly re-check their
+          weather any time. Your favorite sailings stay just a click away.
         </p>
 
         <label className="cc-label">Email</label>
@@ -77,19 +77,19 @@ export default function LoginScreen({
         {error && <div className="cc-login-error">{error}</div>}
 
         <button
-          onClick={handleSignIn}
+          onClick={handleCreate}
           type="button"
-          className="cc-button-primary cc-login-submit"
+          className="cc-button-primary cc-button-primary--yellow cc-login-submit"
         >
-          Sign In
+          Create Account
         </button>
 
         <button
           type="button"
           className="cc-text-link cc-auth-link"
-          onClick={onGoToCreate}
+          onClick={onGoToLogin}
         >
-          Don’t have an account? Create one instead
+          Already have an account? Sign in instead
         </button>
       </div>
     </div>
