@@ -41,10 +41,19 @@ export default function LoginScreen({
 
   return (
     <div className="cc-auth-wrapper">
+      {/* Top logo */}
+      <div className="cc-auth-logo-wrap">
+        <img
+          src="/cruisecast-logo.png"
+          alt="CruiseCast"
+          className="cc-auth-logo"
+        />
+      </div>
+
       {/* Back button */}
       <button
         onClick={onBack}
-        className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
+        className="cc-back-secondary"
         type="button"
       >
         ← Back to Home

@@ -55,18 +55,73 @@
   max-width: 480px !important;
 }
 
-/* Hero icon */
+/* ---- HERO WEATHER ICON (HOME SCREEN) ---- */
+
+.cc-home-icon {
+  text-align: center;
+  margin-top: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+/* Home screen big weather icon */
+.cc-home-icon img {
+  width: 115px;       /* Increase - adjust as needed */
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+}
+
+
+@keyframes cc-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* Hero icon – stacked clouds + rotating sun */
 .cc-hero-wrapper {
   display: flex;
   justify-content: center;
   margin-bottom: 4.5rem;
 }
 
-.cc-hero-icon {
-  width: 190px;
-  max-width: 60%;
+/* Outer wrapper from <HomeLogo /> */
+.cc-home-logo-wrapper {
+  position: relative;
+  width: 210px;              /* ?? overall icon size (make larger/smaller here) */
+  max-width: 70vw;
   filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.35));
 }
+
+/* Back clouds image */
+.cc-home-logo-clouds {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Front sun image – centered and spinning */
+.cc-home-logo-sun {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 65%;                /* ?? sun size inside the clouds */
+  height: auto;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  animation: cc-home-sun-spin 18s linear infinite;
+}
+
+/* Rotate only the sun */
+@keyframes cc-home-sun-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
 
 /* CTA buttons */
 .cc-home-actions {

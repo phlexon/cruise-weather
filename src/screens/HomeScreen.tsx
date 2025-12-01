@@ -64,7 +64,7 @@ export default function HomeScreen({
             onClick={handleAccountAction}
           >
             <span className="cc-cta-label">
-              {user ? "GO TO ACCOUNT" : "LOG IN"}
+              {user ? "GO TO ACCOUNT" : "LOG IN / CREATE AN ACCOUNT"}
             </span>
             <span className="cc-cta-icon">▶</span>
           </button>

@@ -6,37 +6,49 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: #214a7e; /* match top of your gradient */
+  min-height: 100vh;
+  background: linear-gradient(
+    to bottom,
+    #214a7e 0%,
+    #1f7ece 45%,
+    #f4d7a1 100%
+  );
 }
 
-html,
-body {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100%;
+#root {
+  min-height: 100vh;
 }
+
+/* Root app container */
 
 .cc-app {
   min-height: 100vh;
   margin: 0;
-  padding: 1rem 1rem;
-  background: transparent;
+  padding: 2.5rem 1.5rem 2rem;
+  background: transparent;  /* ?? IMPORTANT */
   display: flex;
   flex-direction: column;
-  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
-  overflow-x: hidden; /* Prevent sideways scroll */
+  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.cc-app--home {
-  background: transparent;
+.cc-app-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+	padding-top: 3rem;
+}
+
+.cc-app-main-inner {
+  width: 100%;
+  max-width: 1040px;
 }
 
 /* HEADER */
 
 .cc-app-header {
   max-width: 1040px;
-  margin: 0 auto 2rem auto;
+  margin: 0 auto 3rem auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -46,65 +58,79 @@ body {
 }
 
 .cc-app-logo {
-  height: 52px;
+  height: 80px;        /* was 52px */
+  max-height: 80px;
   object-fit: contain;
 }
 
+
 .cc-app-tagline {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
+  font-size: 0.8rem;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
+  opacity: 0.9;
 }
 
-.cc-app-subtitle {
-  margin-top: 4px;
-  font-size: 12px;
-  font-weight: 400;
-  opacity: 0.92;
-  max-width: 620px;
-}
+/* FOOTER */
 
-/* MAIN LAYOUT */
-
-.cc-app-main {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-.cc-app-main-inner {
-  width: 100%;
+.cc-app-footer {
   max-width: 1040px;
+  margin: 0 auto;
+  padding: 1.25rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: rgba(15, 23, 42, 0.72);
+  text-align: center;
 }
 
 /* MAIN CARD (desktop app view) */
 
 .cc-main-card {
   width: 100%;
-  background: #fff;
-  border-radius: 20px;
-  padding: 10px 10px 10px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(248, 250, 252, 0.96);
+  border-radius: 22px;
+  padding: 1.7rem 1.7rem 1.4rem;
+  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.33);
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+/* Simple header for the main card */
+
+.cc-main-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
 }
 
 .cc-main-title {
-  font-size: 22px;
-  line-height: 1.2;
-  margin: 0 0 16px 0;
-  color: #324a6d;
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1f2937;
 }
 
-/* Helper / status text */
-
-.cc-main-status {
-  margin-top: 10px;
-  font-size: 12px;
-  text-align: center;
-  color: #324a6d;
+.cc-main-subtitle {
+  margin: 0;
+  margin-top: 0.2rem;
+  font-size: 13px;
+  color: #64748b;
 }
+
+.cc-badge {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #e0f2fe;
+  color: #1d4ed8;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Basic error text inline */
 
 .cc-main-error {
   margin-top: 8px;
@@ -118,39 +144,891 @@ body {
 
 .cc-itinerary-wrapper {
   margin-top: 22px;
-  color: #324a6d;
 }
 
-.cc-weather-panel {
-  margin-top: 50px;
-  margin-bottom: 50px;
-  border-radius: 14px;
-  background: rgba(248, 250, 252, 0.96);
-  padding: 10px;
+/* Force consistent card spacing */
+
+.cc-cruise-form-card,
+.cc-results-card,
+.cc-weather-card {
+  border-radius: 18px;
+  padding: 1.25rem 1.3rem;
+  background: #ffffff;
 }
 
-/* === Weather timeline === */
+/* Alternate subtle background for forms */
 
-.cc-weather-timeline {
+.cc-cruise-form-card {
+  background: #f9fafb;
+}
+
+/* Buttons used inside forms */
+
+.cc-inline-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.cc-inline-buttons button {
+  border-radius: 999px;
+  border: none;
+  font-size: 13px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Shared label + inputs */
+
+.cc-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  color: #4b5563;
+}
+
+/* Simple utility for faint sub-label text */
+
+.cc-label-help {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Use for subtle chips or pill tags */
+
+.cc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: #4b5563;
+  font-size: 11px;
+}
+
+/* Simple small icon circle */
+
+.cc-chip-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Generic "inline" alert message */
+
+.cc-inline-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #4b5563;
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------ */
+/* Auth Status Bar (top notification/account strip)             */
+/* ------------------------------------------------------------ */
+
+.cc-auth-bar {
+  max-width: 1040px;
+  margin: 0 auto 1rem auto;        /* center it under the top padding */
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #f9fafb;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.45);
+}
+
+.cc-auth-bar-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* If you ever add an online dot or name span, it will sit nicely here */
+.cc-auth-bar-text strong {
+  font-weight: 600;
+}
+
+.cc-auth-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons inside the auth bar */
+.cc-auth-bar-button {
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.92);
+  color: #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: background-color 0.12s ease, transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.cc-auth-bar-button:hover {
+  background: rgba(15, 23, 42, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.5);
+}
+
+/* Highlighted primary button (Create Account) */
+.cc-auth-bar-button--primary {
+  background: #ffc928;
+  color: #111827;
+  box-shadow: 0 10px 24px rgba(234, 179, 8, 0.45);
+}
+
+.cc-auth-bar-button--primary:hover {
+  background: #f3b518;
+}
+
+/* Logged-out modifier (if your component uses it) */
+.cc-auth-bar.cc-auth-bar--logged-out {
+  background: rgba(15, 23, 42, 0.82);
+}
+
+/* Small-screen behaviour: wrap nicely and center */
+@media (max-width: 640px) {
+  .cc-auth-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    padding: 6px 10px;
+  }
+
+  .cc-auth-bar-text {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cc-auth-bar-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ------------------------------------------------------------ */
+/* Cloud Background                                             */
+/* ------------------------------------------------------------ */
+
+.cc-clouds-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.cc-cloud {
+  position: absolute;
+  height: auto;
+  transform: translate3d(0, 0, 0);
+  animation-name: cc-cloud-drift-single;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.cc-cloud img {
   width: 100%;
+  height: auto;
+  display: block;
 }
 
-/* Mobile row */
+/* Default speeds for each cloud */
 
-.cc-weather-timeline--mobile {
+.cc-cloud--slow {
+  animation-duration: 70s;
+}
+
+.cc-cloud--medium {
+  animation-duration: 50s;
+}
+
+.cc-cloud--fast {
+  animation-duration: 35s;
+}
+
+/* Spacing / size tweaks */
+
+.cc-cloud--large {
+  width: 280px;
+}
+
+.cc-cloud--medium-size {
+  width: 220px;
+}
+
+.cc-cloud--small {
+  width: 155px;
+}
+
+/* Keyframes: gentle horizontal drift */
+
+@keyframes cc-cloud-drift-single {
+  0% {
+    transform: translate3d(-10%, 0, 0);
+  }
+  100% {
+    transform: translate3d(110%, 0, 0);
+  }
+}
+
+/* Also support vertical offset animation if needed */
+
+@keyframes cc-cloud-float {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Ensure the app content stays above clouds */
+
+.cc-app,
+.cc-auth-shell {
+  position: relative;
+  z-index: 1;
+}
+
+/* -------------------------------------------------------- */
+/* HOME HERO LAYOUT (HomeScreen components)                 */
+/* -------------------------------------------------------- */
+
+.cc-hero-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.cc-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 0.75rem;
+}
+
+.cc-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 4px 9px 4px 5px;
+  background: rgba(15, 23, 42, 0.06);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.76);
+}
+
+.cc-hero-eyebrow-pill {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #10b981;
+  color: #ecfdf5;
+  font-size: 12px;
+}
+
+.cc-hero-title {
+  margin: 0;
+  font-size: 2.25rem;
+  letter-spacing: 0.03em;
+  color: #0f172a;
+}
+
+.cc-hero-highlight {
+  color: #1d4ed8;
+}
+
+.cc-hero-body {
+  margin: 0.4rem 0 0.75rem;
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.cc-hero-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* CTA button row */
+
+.cc-hero-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.cc-hero-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+}
+
+.cc-hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.cc-hero-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #9ca3af;
+}
+
+.cc-hero-stat-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Home � right card (mini app preview) */
+
+.cc-hero-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cc-hero-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(145deg, #0b1220 0%, #111827 60%, #1d4ed8 100%);
+  border-radius: 24px;
+  padding: 1.5rem 1.4rem 1.3rem;
+  color: #e5e7eb;
+  box-shadow: 0 24px 40px rgba(15, 23, 42, 0.55);
+  position: relative;
   overflow: hidden;
 }
 
+/* Tiny header row in hero card */
+
+.cc-hero-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cc-hero-card-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cc-hero-card-badge {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.cc-hero-card-badge span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #22c55e;
+  margin-right: 5px;
+}
+
+/* Body of hero preview card */
+
+.cc-hero-card-body {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #e5e7eb;
+}
+
+/* Small inline "sailing label" chips */
+
+.cc-hero-sailing-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.cc-hero-sailing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: rgba(15, 23, 42, 0.75);
+  font-size: 11px;
+}
+
+.cc-hero-sailing-day {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+}
+
+/* Tiny climates row inside hero preview */
+
+.cc-hero-card-climate-row {
+  margin-top: 1.1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cc-hero-card-climate {
+  font-size: 11px;
+  color: #cbd5f5;
+}
+
+/* -------------------------------------------------------- */
+/* CRUISE FORM (selectors & calendar reference)             */
+/* -------------------------------------------------------- */
+
+.cc-cruise-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cc-cruise-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.cc-select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  font-size: 13px;
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.cc-select:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+/* Date input styling */
+
+.cc-date-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.cc-date-input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+/* Submit row in form */
+
+.cc-form-submit-row {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Basic CTA button, kept for compatibility */
+
+.cc-cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.cc-cta-button--primary {
+  background: #1d4ed8;
+  color: #eff6ff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.45);
+}
+
+.cc-cta-button--primary:hover {
+  transform: translateY(-1px);
+}
+
+.cc-cta-button--secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* Little text under the button */
+
+.cc-form-footnote {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* -------------------------------------------------------- */
+/* CRUISE RESULTS LIST                                      */
+/* -------------------------------------------------------- */
+
+.cc-results-card {
+  margin-top: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+}
+
+.cc-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.cc-results-title {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #111827;
+}
+
+.cc-results-count {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Grid of result cards */
+
+.cc-results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.cc-result-card {
+  border-radius: 16px;
+  padding: 10px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.1s ease;
+  text-align: left;
+}
+
+.cc-result-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.18);
+  border-color: rgba(59, 130, 246, 0.85);
+}
+
+/* Selected state */
+
+.cc-result-card--selected {
+  border-color: rgba(234, 179, 8, 0.95);
+  box-shadow: 0 18px 40px rgba(234, 179, 8, 0.45);
+}
+
+/* Inner content */
+
+.cc-result-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cc-result-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.cc-result-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.cc-result-chip {
+  font-size: 10px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(219, 234, 254, 0.9);
+  color: #1d4ed8;
+}
+
+/* "No results" tip */
+
+.cc-results-empty {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* -------------------------------------------------------- */
+/* SPINNER                                                  */
+/* -------------------------------------------------------- */
+
+.cc-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.cc-spinner-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.8);
+  border-top-color: #1d4ed8;
+  animation: cc-spinner-rotate 0.7s linear infinite;
+}
+
+@keyframes cc-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* -------------------------------------------------------- */
+/* WEATHER TIMELINE                                         */
+/* -------------------------------------------------------- */
+
+.cc-weather-card {
+  margin-top: 18px;
+  background: linear-gradient(135deg, #0b1120, #1d4ed8);
+  border-radius: 20px;
+  padding: 1.2rem 1.3rem 1.1rem;
+  color: #e5e7eb;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.cc-weather-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.cc-weather-title {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cc-weather-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: #cbd5f5;
+}
+
+/* Peeking gradient line at top */
+.cc-weather-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f97316, #22c55e, #38bdf8);
+  opacity: 0.9;
+}
+
+/* Row container for all days (desktop) */
+.cc-weather-row-desktop {
+  display: flex;
+  margin-top: 16px;
+  gap: 10px;
+}
+
+/* Each day card */
+.cc-day-card {
+  flex: 1;
+  min-width: 0;
+  border-radius: 14px;
+  padding: 10px 10px 9px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  font-size: 11px;
+  box-sizing: border-box;
+}
+
+/* Forecast vs climatology color hints */
+
+.cc-day-card--forecast {
+  background: radial-gradient(circle at top left, #f97316, #0f172a 60%);
+}
+
+.cc-day-card--climo {
+  background: radial-gradient(circle at top left, #22c55e, #0f172a 60%);
+}
+
+.cc-day-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.cc-day-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #93c5fd;
+}
+
+.cc-day-date {
+  font-size: 10px;
+  color: #cbd5f5;
+}
+
+/* Temperature row */
+.cc-day-temp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.cc-day-temp-high {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fee2e2;
+}
+
+.cc-day-temp-low {
+  font-size: 13px;
+  color: #bfdbfe;
+}
+
+/* Rain + icon row */
+.cc-day-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+/* Icon wrapper */
+.cc-day-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Rain chance */
+.cc-day-rain {
+  font-size: 11px;
+  color: #bfdbfe;
+}
+
+/* Location */
+.cc-day-location {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #e5e7eb;
+}
+
+/* Description */
+.cc-day-description {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #cbd5f5;
+}
+
+/* Mobile scroll row */
 .cc-weather-row-mobile {
   display: flex;
-  gap: 12px;
-  padding: 4px 4px 8px;
+  gap: 10px;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  margin-top: 12px;
 }
 
 .cc-weather-row-mobile::-webkit-scrollbar {
-  height: 6px;
+  height: 5px;
+}
+
+.cc-weather-row-mobile::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 999px;
 }
 
 .cc-weather-row-mobile::-webkit-scrollbar-thumb {
@@ -182,1025 +1060,503 @@ body {
   gap: 12px;
 }
 
-.cc-weather-page-indicator {
-  font-size: 11px;
-  text-align: center;
-  opacity: 0.75;
-}
+/* Label showing which pieces are forecast vs climo */
 
-/* Nav arrows */
-
-.cc-weather-nav-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
-  background: rgba(15, 23, 42, 0.06);
+.cc-weather-legend {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
-  color: #0f172a;
-}
-
-.cc-weather-nav-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-/* Weather cards */
-
-.cc-weather-card {
-  flex: 0 0 240px;
-  border-radius: 20px;
-  padding: 12px 12px 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 260px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
-  color: #0f172a;
-  position: relative;
-}
-
-@media (min-width: 1024px) {
-  .cc-weather-card {
-    flex: 1 1 0;
-  }
-}
-
-/* Backgrounds */
-
-.cc-weather-card--forecast {
-  background: radial-gradient(
-    circle at top left,
-    #fed7aa 0%,
-    #fee2e2 36%,
-    #fef9c3 100%
-  );
-}
-
-.cc-weather-card--climo {
-  background: radial-gradient(
-    circle at top left,
-    #1d4ed8 0%,
-    #4f46e5 35%,
-    #7c3aed 100%
-  );
-  color: #e5e7eb;
-}
-
-/* Card header + badge */
-
-.cc-weather-card-header {
-  display: block;
-}
-
-.cc-weather-card-date {
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0.9;
-  margin-bottom: 2px;
-}
-
-.cc-weather-card-badge {
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 10px;
-  background: rgba(15, 23, 42, 0.15);
-  display: inline-block;
-}
-
-.cc-weather-card--climo .cc-weather-card-badge {
-  background: rgba(15, 23, 42, 0.45);
-}
-
-/* Big centered icon */
-
-.cc-weather-icon-wrap {
-  margin: 10px 0 4px;
-  display: flex;
-  justify-content: center;
-}
-
-.cc-weather-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 999px;
-  background: rgba(248, 250, 252, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
-}
-
-.cc-weather-icon img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
-/* Temps, rain, location */
-
-.cc-weather-temp-main {
-  font-size: 26px;
-  font-weight: 700;
-  text-align: center;
-  margin-top: 2px;
-}
-
-.cc-weather-temp-sub {
-  font-size: 12px;
-  margin-top: 2px;
-  text-align: center;
-  opacity: 0.9;
-}
-
-.cc-weather-rain {
-  font-size: 11px;
-  margin-top: 4px;
-  text-align: center;
-}
-
-.cc-weather-location {
+  gap: 8px;
   margin-top: 10px;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.cc-weather-description {
-  margin-top: 4px;
   font-size: 11px;
-  text-align: center;
-  opacity: 0.85;
+  color: #cbd5f5;
 }
 
-/* Cruise summary text in results */
-
-.cc-cruise-summary {
-  margin-top: 12px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #4b5563;
-}
-
-.cc-cruise-summary-title {
-  font-size: 14px;
+.cc-weather-legend-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   font-weight: 600;
-  margin-bottom: 4px;
 }
 
-/* Empty state text */
-
-.cc-empty-title {
-  font-size: 18px;
-  margin: 0 0 6px 0;
-  font-weight: 600;
-  text-align: center;
+.cc-weather-legend-pill--forecast {
+  background: rgba(248, 113, 113, 0.3);
 }
 
-.cc-empty-text {
-  font-size: 13px;
-  margin: 0 0 6px 0;
-  opacity: 0.9;
+.cc-weather-legend-pill--climo {
+  background: rgba(52, 211, 153, 0.3);
 }
 
-.cc-empty-tip {
-  font-size: 11px;
+/* -------------------------------------------------------- */
+/* SAVED CRUISES SCREEN                                     */
+/* -------------------------------------------------------- */
+
+.cc-saved-screen {
+  width: 100%;
+}
+
+.cc-saved-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.cc-saved-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cc-saved-title {
   margin: 0;
-  font-style: italic;
-  opacity: 0.75;
-}
-
-/* RESULTS CARD */
-
-.cc-results-card {
-  margin-top: 18px;
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: 18px;
-  padding: 16px 20px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-}
-
-.cc-results-title {
-  font-size: 14px;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 1.05rem;
   letter-spacing: 0.08em;
-  color: #324a6d;
-  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  color: #111827;
 }
 
-/* “No results” notice */
+.cc-saved-subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
 
-.cc-results-empty {
-  margin-top: 18px;
+/* Generic button row on saved screen */
+.cc-saved-header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cc-saved-main {
   background: rgba(255, 255, 255, 0.97);
-  border-radius: 16px;
-  padding: 14px 18px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  font-size: 13px;
-  color: #374151;
+  border-radius: 26px;
+  padding: 1.6rem 1.7rem;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.25);
 }
 
-/* FOOTER */
-
-.cc-app-footer {
-  margin-top: 1.25rem;
-  text-align: center;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* Small-screen tweaks */
-
-
-
-/* === CruiseCast Spinner === */
-
-@keyframes cc-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.cc-spinner-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.cc-spinner-card {
-  pointer-events: auto;
-  padding: 1.25rem 1.5rem;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.82);
-  color: #f9fafb;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(248, 250, 252, 0.75);
-}
-
-.cc-spinner-icon-wrapper {
-  position: relative;
-  width: 32px;
-  height: 32px;
-}
-
-.cc-spinner-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  border: 3px solid rgba(191, 219, 254, 0.35);
-  border-top-color: #facc15;
-  border-right-color: #22c1c3;
-  animation: cc-spin 0.8s linear infinite;
-}
-
-.cc-spinner-dot {
-  position: absolute;
-  inset: 6px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 30% 20%, #fde68a, #f97316);
-}
-
-.cc-spinner-text {
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* === CruiseCast Form Styling === */
-
-.cc-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.cc-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.cc-field-label {
-  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.85);
-}
-
-.cc-select,
-.cc-input {
-  width: 100%;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.55);
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
-  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  background: rgba(248, 250, 252, 0.98);
-  color: #0f172a;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease,
-    background-color 0.15s ease;
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%),
-    linear-gradient(135deg, #9ca3af 50%, transparent 50%);
-  background-position: calc(100% - 18px) calc(50% - 3px),
-    calc(100% - 13px) calc(50% - 3px);
-  background-repeat: no-repeat;
-  background-size: 6px 6px, 6px 6px;
-}
-
-.cc-select:focus,
-.cc-input:focus {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.5);
-  background: #ffffff;
-}
-
-.cc-input-date {
-  width: 100%;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.55);
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
-  background: rgba(248, 250, 252, 0.98);
-  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  outline: none;
-}
-
-/* Calendar wrapper */
-
-.cc-calendar-shell {
-  margin-top: 0.4rem;
-  border-radius: 24px;
-  padding: 0.75rem 0.75rem 0.9rem;
-  background: rgba(248, 250, 252, 0.98);
+/* Individual saved items */
+.cc-saved-item {
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.85rem;
+  background: #f9fafb;
   border: 1px solid rgba(148, 163, 184, 0.4);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease,
+    transform 0.08s ease;
 }
 
-/* CTA row */
+.cc-saved-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.25);
+}
 
-.cc-cta-row {
-  margin-top: 0.75rem;
+/* Title & date line */
+.cc-saved-item-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cc-saved-item-meta {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Tag row */
+.cc-saved-item-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.cc-cta-row-right {
-  margin-left: auto;
-  display: flex;
-  gap: 0.6rem;
-}
-
-/* CTA buttons (homescreen style) */
-
-.cc-cta-button {
-  position: relative;
-  border-radius: 999px;
-  padding: 0.7rem 1.5rem;
-  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  font-size: 0.92rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: none;
-  cursor: pointer;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 0.4rem;
-  transition: transform 0.12s ease, box-shadow 0.12s ease,
-    background-color 0.12s ease, color 0.12s ease;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
 }
 
-.cc-cta-button:active {
-  transform: translateY(1px) scale(0.99);
+/* Empty state */
+.cc-saved-empty {
+  text-align: center;
+  font-size: 0.86rem;
+  color: #6b7280;
 }
 
-.cc-cta-button--primary {
-  background: rgba(231, 245, 255, 0.98);
-  color: #274669;
-  box-shadow: 0 12px 22px rgba(6, 24, 44, 0.45);
-}
+/* -------------------------------------------------------- */
+/* LOGIN / CREATE ACCOUNT SCREENS                           */
+/* -------------------------------------------------------- */
 
-.cc-cta-button--secondary {
-  background: rgba(15, 23, 42, 0.04);
-  color: #0f172a;
-  border-radius: 999px;
-}
-
-/* Border animation */
-
-.cc-cta-button::before,
-.cc-cta-button::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid transparent;
-  pointer-events: none;
-}
-
-.cc-cta-button:hover::before {
-  animation: cc-border-run 0.8s linear forwards;
-}
-
-@keyframes cc-border-run {
-  0% {
-    border-top-color: rgba(251, 191, 36, 1);
-    border-right-color: transparent;
-    border-bottom-color: transparent;
-    border-left-color: transparent;
-  }
-  33% {
-    border-top-color: rgba(251, 191, 36, 1);
-    border-right-color: rgba(56, 189, 248, 1);
-    border-bottom-color: transparent;
-    border-left-color: transparent;
-  }
-  66% {
-    border-top-color: rgba(251, 191, 36, 1);
-    border-right-color: rgba(56, 189, 248, 1);
-    border-bottom-color: rgba(45, 212, 191, 1);
-    border-left-color: transparent;
-  }
-  100% {
-    border-top-color: rgba(251, 191, 36, 1);
-    border-right-color: rgba(56, 189, 248, 1);
-    border-bottom-color: rgba(45, 212, 191, 1);
-    border-left-color: rgba(251, 191, 36, 1);
-  }
-}
-
-.cc-cta-button--primary:hover {
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
-}
-
-.cc-cta-button--secondary:hover {
-  background: rgba(15, 23, 42, 0.07);
-}
-
-/* Homescreen animated logo */
-
-@keyframes cc-sun-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Home screen spacing fix */
-.cc-home-inner {
-  padding-top: 3.5rem !important; /* reduced from 4rem */
-}
-
-.cc-home-header {
-  margin-top: 2.5rem !important; /* reduced from 2.5rem */
-}
-
-
-.cc-home-logo-wrapper {
-  position: relative;
-  width: 140px;
-  height: 140px;
+.cc-auth-layout {
+  max-width: 1040px;
   margin: 0 auto;
 }
 
-.cc-home-logo-clouds {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  z-index: 1;
-  opacity: 0.95;
-}
-
-.cc-home-logo-sun {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transform-origin: center;
-  transform-box: fill-box;
-  animation: cc-sun-spin 14s linear infinite;
-  margin-left: -30px; /* slight left offset */
-  z-index: 2;
-}
-
-/* Global Go Home button wrapper (if you use it in App.tsx) */
-
-.cc-go-home-btn {
-  width: 100%;
-  margin: 0 auto 1rem auto;
-  max-width: 1040px;
-  display: block;
-}
-
-@media (min-width: 768px) {
-  .cc-go-home-btn {
-    width: auto;
-    align-self: flex-start;
-    margin-bottom: 1.25rem;
-  }
-}
-
-/* Mobile typography tweaks */
-
-@media (max-width: 768px) {
-  .cc-main-title {
-    font-size: 38px !important;
-    font-weight: 900 !important;
-    color: #214a7e !important;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-
-  .cc-field-label {
-    text-align: center !important;
-    width: 100%;
-    display: block;
-  }
-}
-
-/* Full-width CTA helper */
-
-.cc-cta--full {
-  width: 100%;
-  justify-content: center;
-  text-align: center;
-}
-
-/* Homescreen-style icon bubble */
-
-.cc-cta-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  background: #ffc928;
-  color: #214a7e;
-  font-size: 0.9rem;
-  margin-left: 12px;
-  flex-shrink: 0;
-}
-
-.cc-cta-icon img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-}
-
-/* === Animated cloud background === */
-
-.cc-clouds-bg {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.cc-cloud {
-  position: absolute;
-  height: auto;
-  transform: translate3d(0, 0, 0);
-  animation-name: cc-cloud-drift-single;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-.cc-cloud img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-@keyframes cc-cloud-drift-single {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  100% {
-    transform: translate3d(-90vw, -10vh, 0);
-  }
-}
-
-/* --- Save cruise button --- */
-
-.cc-save-wrapper {
-  margin-top: 1.75rem;
-}
-
-/* Re-uses the same pill styling as other CTAs */
-.cc-save-button {
-  min-width: 230px;
-  padding: 0.85rem 2.5rem;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
-}
-
-/* When saved, give it a softer “success” look */
-.cc-save-button--saved {
-  background: #f4d7a1; /* same warm peach family */
-  color: #16315b;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
-}
-
-/* Helper text */
-.cc-save-error {
-  margin-top: 0.4rem;
-  font-size: 0.75rem;
-  color: #b91c1c;
-}
-
-.cc-save-hint {
-  margin-top: 0.4rem;
-  font-size: 0.75rem;
-  color: rgba(15, 23, 42, 0.7);
-}
-
-/* Mobile: full width, centered */
-@media (max-width: 767px) {
-  .cc-save-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .cc-save-button {
-    width: 100%;
-    max-width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Logged-out variant of the auth bar */
-.cc-auth-bar--logged-out {
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.cc-auth-bar-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* Slightly stronger button for "Create account" if you want */
-.cc-auth-bar-button--primary {
-  font-weight: 600;
-}
-
-
-/* === AUTH STATUS BAR (TOP OF SCREEN) === */
-
-.cc-auth-bar {
-  background: #182a51;
-  color: #ffc928;
-  max-width: 1040px;
-  width: 100%;
-  margin: 1.25rem auto;
-  padding: 0.75rem 1.25rem;
-  border-radius: 999px;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.25);
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* LEFT text, RIGHT buttons */
-  gap: 1rem;
-}
-
-.cc-auth-bar-text {
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.cc-auth-bar-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem; /* space between buttons */
-}
-
-.cc-auth-bar-button {
-  white-space: nowrap;
-  padding: 0.45rem 1.1rem;
-  border-radius: 999px;
-  background: #ffffff;
-  border: none;
-  font-weight: 600;
-  color: #0f172a;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cc-auth-bar-button:hover {
-  background: #e2e8f0;
-}
-
-.cc-auth-bar-button--primary {
-  background: #ffc928;
-  color: #0f172a;
-}
-
-.cc-auth-bar-button--primary:hover {
-  background: #ffb510;
-}
-
-
-.cc-auth-bar span,
-.cc-auth-bar button {
-  white-space: nowrap;       /* keeps spacing tight */
-}
-
-
-.cc-auth-bar span {
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.cc-auth-bar-buttons {
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* Shared button style */
-.cc-auth-bar-button {
-  background: #ffffff;
-  color: #1a1a1a;
-  border: none;
-  padding: 0.45rem 1.1rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-  white-space: nowrap;
-  transition: background 0.18s ease, transform 0.18s ease,
-    box-shadow 0.18s ease;
-	 display: flex;
-  align-items: center;
-  justify-content: center;   /* center whole bar */
-  gap: 1.25rem;              /* space between text and button group */
-}
-
-
-.cc-auth-bar-button:hover {
-  background: #f2f2f2;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
-}
-
-/* Desktop: keep buttons same width */
-@media (min-width: 769px) {
-  .cc-auth-bar-button {
-    min-width: 180px; /* tweak if you want longer/shorter */
-  }
-}
-
-/* Mobile: stack + full width + smaller gap above logo */
-@media (max-width: 768px) {
-  .cc-auth-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.7rem 1rem;
-    margin-top: 0.75rem;
-    margin-bottom: 0.75rem;
-    border-radius: 24px;
-    width: calc(100% - 2rem);
-  }
-
-  .cc-auth-bar span {
-    text-align: center;
-    font-size: 0.85rem;
-  }
-
-  .cc-auth-bar-buttons {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .cc-auth-bar-button {
-    width: 100%;
-  }
-
-  .cc-app-header {
-    margin-top: 35px; /* tighten gap under auth bar */
-  }
-}
-
-/* === Login / Auth screen === */
-
-.cc-auth-outer {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.cc-auth-wrapper {
-  width: 100%;
-  max-width: 1040px; /* matches main card */
-  
-}
-
-/* Card container */
-
-.cc-login-card {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: 20px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-}
-
-/* Back button */
-
-.cc-login-back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-bottom: 1.5rem;
-  padding: 0.55rem 1.4rem;
-  border-radius: 999px;
-  border: none;
-  background: #e5edf7;
-  color: #0f172a;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
-}
-
-.cc-login-back-button:hover {
-  background: #dbe6f7;
-}
-
-/* 2-column grid */
-
-.cc-login-grid {
+.cc-auth-card-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 440px;
-  border-radius: 16px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 0;
+  border-radius: 24px;
   overflow: hidden;
+  box-shadow: 0 24px 42px rgba(15, 23, 42, 0.5);
+  background: #f9fafb;
 }
 
-/* Columns */
+/* Left section (brand / explanation) */
 
-.cc-login-col {
-  padding: 2.75rem 2.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.cc-auth-left {
+  background: #0b1120;
+  color: #e5e7eb;
+  padding: 2rem 2.25rem;
+  position: relative;
 }
 
-.cc-login-col--left {
-  background: #f7fafc;
-}
-
-.cc-login-col--right {
-  background: #cfe6ff; /* solid light blue */
-}
-
-/* Titles & copy */
-
-.cc-login-title {
-  font-size: 1.6rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: #1e293b;
-}
-
-.cc-login-desc {
-  color: #475569;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
-}
-
-/* Labels & inputs */
-
-.cc-label {
-  font-size: 0.78rem;
+.cc-auth-left-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #64748b;
-  font-weight: 600;
-  margin-bottom: 0.4rem;
 }
 
-.cc-login-input {
-  width: 100%;
-  border-radius: 999px;
-  border: none;
-  padding: 0.85rem 1.1rem;
-  margin-bottom: 1rem;
-  background: rgba(248, 250, 252, 0.96);
-  box-shadow:
-    inset 0 0 0 1px rgba(15, 23, 42, 0.06),
-    0 2px 4px rgba(15, 23, 42, 0.06);
-  font-size: 0.95rem;
+.cc-auth-left-body {
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: #cbd5f5;
+}
+
+/* Right section (form) */
+
+.cc-auth-form-shell {
+  background: #e0f2fe;
+  padding: 2rem 2.25rem;
+}
+
+.cc-auth-form-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: #0f172a;
+}
+
+.cc-auth-form-description {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: #4b5563;
+}
+
+/* Auth form fields */
+
+.cc-auth-field {
+  margin-bottom: 0.85rem;
+}
+
+.cc-auth-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  font-size: 13px;
+  padding: 7px 10px;
+  box-sizing: border-box;
   outline: none;
 }
 
-.cc-login-input:focus {
-  box-shadow:
-    inset 0 0 0 1px #0284c7,
-    0 0 0 1px rgba(56, 189, 248, 0.4),
-    0 8px 20px rgba(37, 99, 235, 0.25);
+.cc-auth-input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.45);
 }
 
-/* Error text */
+/* Auth form button row */
 
-.cc-login-error {
-  margin-top: 0.25rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.8rem;
+.cc-auth-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Small inline error */
+
+.cc-auth-error {
+  font-size: 12px;
   color: #b91c1c;
+  margin-top: 4px;
 }
 
-/* Buttons */
+/* -------------------------------------------------------- */
+/* HOME: FOOTER-LIKE DISCLOSURES                            */
+/* -------------------------------------------------------- */
 
-.cc-login-submit {
-  margin-top: 0.25rem;
-  width: 100%;
+.cc-disclosure {
+  margin-top: 1.1rem;
+  font-size: 11px;
+  color: #6b7280;
 }
 
-/* Shared primary button – match home screen CTA size/shape */
+/* -------------------------------------------------------- */
+/* MOBILE WIZARD                                            */
+/* -------------------------------------------------------- */
 
-.cc-button-primary {
-  position: relative;
-  border-radius: 999px;
-  padding: 0.7rem 1.5rem;
-  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  font-size: 0.92rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+.cc-mobile-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cc-mobile-step-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  transition: transform 0.12s ease, box-shadow 0.12s ease,
-    background-color 0.12s ease, color 0.12s ease;
-  background: rgba(231, 245, 255, 0.98); /* dark navy base */
+  color: #6b7280;
+}
+
+.cc-mobile-step-title {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 1rem;
   color: #0f172a;
 }
 
-.cc-button-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.45);
+/* Wizard nav on mobile uses cc-button now; older style remains for fallback */
+
+.cc-mobile-step-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
-.cc-button-primary:active {
-  transform: translateY(1px) scale(0.99);
+.cc-mobile-step-nav button {
+  flex: 1;
 }
 
-.cc-button-primary--yellow {
-  background: #ffc928;
-  color: #1f2937;
+/* Shift anything that should float above wizard */
+
+.cc-mobile-floating-caption {
+  margin-top: -0.2rem;
+  font-size: 11px;
+  color: #6b7280;
 }
 
-.cc-button-primary--yellow:hover {
-  background: #fbbf24;
+/* -------------------------------------------------------- */
+/* SUCCESS / TOAST MESSAGES                                 */
+/* -------------------------------------------------------- */
+
+.cc-toast {
+  max-width: 1040px;
+  margin: 0 auto 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.7);
+  color: #047857;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+/* -------------------------------------------------------- */
+/* miscellaneous small components                           */
+/* -------------------------------------------------------- */
+
+.cc-kicker {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+/* Save Cruise button wrapper */
+
+.cc-save-wrapper {
+  margin-top: 10px;
+}
+
+.cc-save-button {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px dashed rgba(148, 163, 184, 0.9);
+  padding: 6px 11px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  background: rgba(249, 250, 251, 0.9);
+  color: #4b5563;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.cc-save-button:hover {
+  background: #e5e7eb;
+  border-color: #1d4ed8;
+}
+
+/* tiny icon used inside save button */
+
+.cc-save-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+/* -------------------------------------------------------- */
+/* RESPONSIVE TWEAKS                                        */
+/* -------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .cc-hero-shell {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .cc-app {
+    padding: 2rem 1.25rem 1.75rem;
+  }
+
+  .cc-main-card {
+    padding: 1.5rem 1.35rem 1.25rem;
+    border-radius: 20px;
+  }
+
+  .cc-results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-hero-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-hero-left {
+    padding-right: 0;
+  }
+
+  .cc-hero-right {
+    margin-top: 1.1rem;
+  }
+
+  .cc-auth-card-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-auth-left {
+    padding: 1.7rem 1.6rem;
+  }
+
+  .cc-auth-form-shell {
+    padding: 1.5rem 1.6rem 1.7rem;
+  }
+
+  .cc-saved-main {
+    padding: 1.35rem 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .cc-app {
+    padding: 1.75rem 1rem 1.4rem;
+  }
+
+  .cc-app-header {
+    margin-bottom: 1.4rem;
+  }
+
+  .cc-app-logo {
+    height: 44px;
+  }
+
+  .cc-main-card {
+    padding: 1.35rem 1.1rem 1.1rem;
+  }
+
+  .cc-hero-title {
+    font-size: 1.75rem;
+  }
+
+  .cc-hero-card {
+    padding: 1.3rem 1.1rem 1.1rem;
+  }
+
+  .cc-results-card {
+    padding: 1.1rem 1.05rem;
+  }
+
+  .cc-weather-card {
+    padding: 1.1rem 1.05rem;
+  }
+
+  .cc-auth-left-title {
+    font-size: 1.1rem;
+  }
+
+  .cc-auth-form-title {
+    font-size: 0.96rem;
+  }
+
+  .cc-app-footer {
+    font-size: 0.7rem;
+  }
+
+  .cc-kicker {
+    font-size: 10px;
+  }
+}
+
+/* Extra-small */
+@media (max-width: 480px) {
+  .cc-hero-stat-row {
+    gap: 1rem;
+  }
+
+  .cc-saved-main {
+    border-radius: 18px;
+  }
+
+  .cc-auth-status-bar {
+    font-size: 11px;
+  }
+
+  .cc-auth-status-right {
+    gap: 4px;
+  }
+
+  .cc-auth-status-button {
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+}
+
+.cc-authsplit-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.7rem;
+}
+
+.cc-authsplit-logo {
+  height: 58px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
+}
+
+@media (max-width: 640px) {
+  .cc-authsplit-logo {
+    height: 48px;
+  }
+}
+
 
 /* ----------------------------------------- */
-/* SAVED CRUISES SCREEN — FINAL COLOR FIX    */
+/* SAVED CRUISES SCREEN � FINAL COLOR FIX    */
 /* ----------------------------------------- */
 
 /* The outer container inside SavedCruises (dark bg culprit) */
@@ -1214,15 +1570,21 @@ body {
   padding: 0 !important;
 }
 
-/* The white content box of the SavedCruisesScreen */
-.cc-main-card {
-  background: #fff !important;
-  backdrop-filter: blur(10px);
-  border-radius: 30px !important;
-  padding: 1rem !important;
+/* Specifically ensure the main saved list area is light */
+.saved-cruises-container > div,
+.cc-saved-wrapper > div {
+  background: transparent !important;
 }
 
-/* Each saved cruise row */
+/* The actual internal card we want to color, not the outer app */
+.saved-cruises-inner {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 26px;
+  padding: 1.8rem 1.9rem;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.25);
+}
+
+/* Saved cruise item refinement */
 .saved-cruise-item,
 .cc-saved-item {
   background: rgba(255, 255, 255, 0.15) !important;
@@ -1240,60 +1602,7 @@ body {
   font-weight: 600;
 }
 
-.saved-cruise-item p,
-.cc-saved-item-subtitle {
-  color: rgba(255,255,255,0.9) !important;
-}
-
-
-/* Mobile login layout: stack the columns */
-
-@media (max-width: 900px) {
-  .cc-auth-wrapper {
-    margin-top: 1rem;
-    padding: 0 1rem 2rem;
-  }
-
-  .cc-login-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cc-login-col {
-    padding: 2rem 1.5rem;
-  }
-
-  .cc-login-col--left {
-    border-radius: 16px 16px 0 0;
-  }
-
-  .cc-login-col--right {
-    border-radius: 0 0 16px 16px;
-  }
-}
-
-/* Prevent horizontal scroll on main cards */
-
-.cc-main-card,
-.cc-results-card,
-.cc-saved-card,
-.cc-weather-card {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-/* Remove outer padding around auth bar wrapper on desktop if you use cc-app--authed */
-
-@media (min-width: 768px) {
-  .cc-app.cc-app--authed {
-    padding-left: 0;
-    padding-right: 0;
-  }
-}
-
-/* ------------------------------------------------------ */
-/* SAVED CRUISES — Light Theme to Match CruiseCast Style  */
-/* ------------------------------------------------------ */
-
+/* Additional improvements for readability on light app background */
 .cc-saved-container {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 26px;
@@ -1303,325 +1612,40 @@ body {
   color: #1f2b41;
 }
 
-.cc-saved-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2b41;
-  margin-bottom: 1.25rem;
-}
-
-.cc-saved-loading,
-.cc-saved-empty {
-  font-size: 0.9rem;
-  color: #4a5b75;
-}
-
-.cc-saved-error {
-  font-size: 0.9rem;
-  color: #c62828;
-  margin-bottom: 0.5rem;
-}
-
-.cc-saved-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* Each saved cruise card */
-.cc-saved-item {
+/* THANK-YOU banner / top notice on saved screen */
+.cc-saved-banner {
   width: 100%;
-  text-align: left;
-  background: #e8eef7;
-  border-radius: 18px;
-  padding: 1rem 1.25rem;
-  border: 1px solid rgba(180, 190, 205, 0.5);
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-
-.cc-saved-item:hover {
-  background: #dbe4f3;
-  transform: translateY(-1px);
-}
-
-.cc-saved-item-title {
-  font-weight: 600;
-  font-size: 1rem;
-  color: #1f2b41;
-}
-
-.cc-saved-item-date {
-  font-size: 0.85rem;
-  color: #46546c;
-  margin-top: 4px;
-}
-
-/* ========================= */
-/* SAVED CRUISES SCREEN ONLY */
-/* ========================= */
-
-.cc-app.cc-app--saved .cc-main-card {
-  background: rgba(255,255,255,0.9) !important;
-  border-radius: 28px;
-  padding: 2rem;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
-  backdrop-filter: blur(8px);
-}
-
-.cc-app.cc-app--saved .cc-saved-item {
-  background: #1b345a !important;
-  border-radius: 18px;
-  padding: 1rem 1.25rem;
-  color: #fff;
-}
-/* ===================================== */
-/* ACCOUNT DASHBOARD (Saved view)       */
-/* ===================================== */
-
-.cc-account {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-/* Dashboard header */
-.cc-account-header {
-  margin-top: 0.5rem;
-}
-
-.cc-account-title {
-  font-size: 1.6rem;
-  margin: 0 0 0.25rem 0;
-  color: #1f3c66;
-}
-
-.cc-account-subtitle {
-  margin: 0;
-  font-size: 0.95rem;
-  color: #4a607f;
-}
-
-.cc-account-email {
-  font-weight: 600;
-  color: #1f3c66;
-}
-
-/* Grid layout: overview + saved list */
-.cc-account-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-@media (min-width: 768px) {
-  .cc-account-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr);
-    gap: 1.75rem;
-    align-items: flex-start;
-  }
-}
-
-/* Individual dashboard cards */
-.cc-account-card {
-  background: rgba(248, 250, 252, 0.98);
-  border-radius: 20px;
-  padding: 1.5rem 1.75rem;
-  border: 1px solid rgba(203, 213, 225, 0.8);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-}
-
-.cc-account-card-title {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  color: #1f3c66;
-}
-
-.cc-account-card-text {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.92rem;
-  color: #4a607f;
-}
-
-.cc-account-card-list {
-  margin: 0;
-  padding-left: 1.25rem;
-  font-size: 0.9rem;
-  color: #4a607f;
-}
-
-.cc-account-card-list li + li {
-  margin-top: 0.3rem;
-}
-
-.cc-account-card-footnote {
-  margin-top: 0.9rem;
-  font-size: 0.8rem;
-  color: #6b7280;
-  font-style: italic;
-}
-
-/* Saved-cruises card tweaks */
-.cc-account-card--saved {
-  padding: 1.25rem 1.4rem;
-}
-
-/* Saved cruises styling */
-.cc-saved-container {
-  background: rgba(243, 246, 252, 0.95);
-  border-radius: 16px;
-  padding: 1rem 1.1rem 1.1rem;
-  border: 1px solid rgba(203, 213, 225, 0.9);
-}
-
-.cc-saved-title {
-  margin: 0 0 0.6rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1f3c66;
-}
-
-.cc-saved-loading,
-.cc-saved-empty {
-  font-size: 0.85rem;
-  color: #64748b;
-}
-
-.cc-saved-error {
-  font-size: 0.85rem;
-  color: #b91c1c;
-  margin-bottom: 0.5rem;
-}
-
-.cc-saved-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-}
-
-.cc-saved-item {
-  width: 100%;
-  text-align: left;
-  background: #2e426d !important;   /* << Your requested color */
-  border-radius: 14px;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  cursor: pointer;
-  transition: background 0.18s ease, transform 0.15s ease,
-    box-shadow 0.18s ease;
-}
-
-.cc-saved-item:hover {
-  background: #f8fafc;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-}
-
-.cc-saved-item-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.cc-saved-item-date {
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin-top: 0.2rem;
-}
-
-/* Saved Cruises panel: no inner card, just content inside the main card */
-.cc-saved-container {
-  background: transparent;     /* remove the second box background */
-  box-shadow: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-}
-
-/* Title and text darker & aligned with left column */
-.cc-saved-title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #1a2b48;
-  margin-bottom: 1.25rem;
-}
-
-/* Saved list spacing */
-.cc-saved-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* Individual saved cruise cards */
-.cc-saved-item {
-  width: 100%;
-  text-align: left;
-  background: #1b3358;          /* or #22385f if you want lighter */
-  color: #f9fbff;
-  border-radius: 24px;
-  padding: 1.1rem 1.4rem;
-  border: none;
-  box-shadow: 0 10px 24px rgba(8, 24, 54, 0.35);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease,
-    background 0.15s ease;
-}
-
-.cc-saved-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(8, 24, 54, 0.4);
-  background: #223f6b;
-}
-
-.cc-saved-item-title {
-  font-weight: 600;
-  font-size: 1rem;
-  color: #ffffff;
-  margin-bottom: 0.35rem;
-}
-
-.cc-saved-item-date {
-  font-size: 0.9rem;
-  color: #d5e0f3;
-}
-
-.cc-login-success-banner {
-  margin-bottom: 1.25rem;
-  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
   border-radius: 999px;
-  background: #e0f7e9;        /* soft green */
-  border: 1px solid #a7f3d0;
-  color: #14532d;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-align: center;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.78rem;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  color: #166534;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* 📱 MOBILE: make clouds smaller without shifting positions */
-@media (max-width: 767px) {
-
-  .cc-clouds-bg {
-    transform: scale(0.45);
-    transform-origin: top center;
-    overflow: visible !important;
-  }
-
-  /* ensure cloud images don't clip */
-  .cc-cloud {
-    overflow: visible !important;
-  }
+/* Ensure the saved header uses light style */
+.cc-saved-header-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
 }
 
-@media (max-width: 767px) {
-  .cc-clouds-bg {
-    margin-top: 70px; /* adjust up or down */
-  }
+/* Guarantee that the root app background remains gradient */
+body,
+html,
+#root {
+  background: #214a7e;
 }
 
-/* REMOVE OUTER BOX FOR LOGIN SCREEN — desktop + mobile */
+/* ------------------------------------------------------ */
+/* LOGIN / AUTH: override to keep outer area gradient     */
+/* ------------------------------------------------------ */
+
+/* Remove outer "box" for login screen in app frame */
 .cc-main-card.cc-login-card {
   background: transparent !important;
   box-shadow: none !important;
@@ -1635,16 +1659,42 @@ body {
   background: transparent !important;
 }
 
-/* Inner wrapper – no big card, just layout container */
-.cc-auth-wrapper {
-  max-width: 1040px;
-  margin: 0 auto 2.5rem;
-  padding: 1.75rem 1.25rem 2.25rem;
-  box-shadow: none !important;
-  
+/* Add breathing room from header when login is shown */
+.cc-login-offset {
+  margin-top: 0.75rem;
 }
 
-/* We already removed the big main-card skin for login, keep this too */
+/* More polished login footer note */
+.cc-login-footnote {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+/* --------------------------- */
+/* MOBILE CLOUD SCALING FIX    */
+/* --------------------------- */
+
+/* ?? MOBILE: make clouds smaller without shifting positions */
+@media (max-width: 767px) {
+  .cc-clouds-bg {
+    transform: scale(0.45);
+    transform-origin: top center;
+    overflow: visible !important;
+  }
+
+  /* ensure cloud images don't clip */
+  .cc-cloud {
+    transform-origin: top center;
+  }
+
+  /* Slight extra padding up top so top bar doesn't clash */
+  .cc-app {
+    padding-top: 2.1rem;
+  }
+}
+
+/* REMOVE OUTER BOX FOR LOGIN SCREEN � desktop + mobile */
 .cc-main-card.cc-login-card {
   background: transparent !important;
   box-shadow: none !important;
@@ -1652,155 +1702,418 @@ body {
   padding: 0 !important;
 }
 
-/* Outer wrapper — remove giant boxes */
-.cc-login-page {
-  max-width: 460px;
-  margin: 0 auto;
-  padding: 1rem 1.25rem 3rem;
+/* Remove outer "box around the login boxes" */
+.cc-auth-outer {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Cloud BG z-index safety */
+.cc-clouds-bg {
+  z-index: 0;
+}
+
+/* ===================================================== */
+/* Layout + components used by updated App.tsx           */
+/* ===================================================== */
+
+/* Home view modifier */
+.cc-app--home {
+  padding-top: 2.25rem;
+}
+
+/* Main desktop two-column layout for app view */
+.cc-desktop-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.cc-desktop-left {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-/* Clean white card */
-.cc-login-card {
-  background: #ffffffee;
-  border-radius: 28px;
-  padding: 2rem 1.5rem;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+.cc-desktop-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-/* Form elements */
-.cc-login-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-  color: #1a2e4f;
+.cc-results-section {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
 }
 
-.cc-login-desc {
-  font-size: 0.95rem;
-  opacity: 0.85;
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
+.cc-weather-section {
+  margin-top: 0.4rem;
 }
 
-.cc-login-input {
-  width: 100%;
-  border-radius: 20px;
-  padding: 0.85rem 1.1rem;
-  background: #eaf1ff;
-  border: none;
-  margin-bottom: 1rem;
-}
-
-.cc-login-submit {
-  width: 100%;
+/* Save button area */
+.cc-save-wrapper {
   margin-top: 0.75rem;
-  padding: 0.9rem;
-  border-radius: 20px;
-  font-size: 1rem;
 }
 
-/* Link under login button */
-.cc-text-link {
-  background: none;
-  border: none;
-  padding: 0;
-  margin-top: 1rem;
-  color: #1a2e4f;
-  font-size: 0.9rem;
-  cursor: pointer;
-  text-decoration: underline;
-  opacity: 0.8;
+.cc-save-wrapper--mobile {
+  margin: 1rem 0 0.25rem;
 }
 
-/* Full-width pale background area */
-.cc-auth-wrapper {
-  width: 100%;
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 3rem 2rem;
-  border-radius: 28px;
-  backdrop-filter: blur(6px);
-}
-
-/* Inner content (no separate box) */
-.cc-auth-content {
-  max-width: 560px;
-  margin: 0 auto;
+/* Mobile layout container */
+.cc-mobile-layout {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
 }
 
-.cc-back-secondary {
-  margin-bottom: 2rem;
-  background: #d1dde7;
-  padding: 0.8rem 1.4rem;
-  border-radius: 40px;
+/* Generic pill buttons */
+.cc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
   border: none;
   cursor: pointer;
+  font-size: 0.9rem;
   font-weight: 600;
+  padding: 0.65rem 1.1rem;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    background-color 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
 }
 
-.cc-auth-link {
-  margin-top: 1rem;
+.cc-button--primary {
+  background: #ffc928;
+  color: #1f2937;
+  box-shadow: 0 14px 30px rgba(234, 179, 8, 0.4);
+}
+
+.cc-button--primary:hover {
+  background: #f3b518;
+  transform: translateY(-1px);
+}
+
+.cc-button--ghost {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.cc-button--ghost:hover {
+  background: rgba(15, 23, 42, 0.14);
+}
+
+.cc-button--link {
+  background: transparent;
+  box-shadow: none;
+  color: #0f172a;
+}
+
+/* Mobile results nav */
+.cc-mobile-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cc-mobile-nav .cc-button {
+  flex: 1;
+}
+
+/* Success toast after login/create */
+.cc-success-message {
+  max-width: 1040px;
+  margin: 0 auto 0.9rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: rgba(22, 163, 74, 0.1);
+  color: #047857;
+  border: 1px solid rgba(22, 163, 74, 0.35);
   text-align: center;
 }
 
-/* Wrapper for auth screens (login + create account) */
-.cc-login-page {
-  width: 100%;
-  display: flex;
-  justify-content: center;
+/* Error banners */
+.cc-error-banner {
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-size: 0.85rem;
+  border: 1px solid rgba(248, 113, 113, 0.7);
 }
 
-/* Shared wrapper for Login + Create Account screens */
+.cc-weather-error {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  color: #fecaca;
+}
+
+/* Small footnote under timeline */
+.cc-weather-footnote {
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+/* ===================================================== */
+/* LOGIN + CREATE ACCOUNT � SINGLE COLUMN SCREENS        */
+/* ===================================================== */
+
 .cc-auth-wrapper {
-  max-width: 1040px;
-  margin: 2.5rem auto 3.5rem;
-  padding: 2.5rem 3rem 3rem;
-  background: #fafafa;                /* light card background */
-  border-radius: 40px;
-  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.35);
-}
-
-/* Back pill sits inside the card */
-.cc-auth-back {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 2rem;
-}
-
-/* Main auth content – single full-width column */
-.cc-auth-panel {
-  max-width: 640px;     /* keeps content readable on big screens */
+  max-width: 640px;
   margin: 0 auto;
+  background: #f9fafb;
+  border-radius: 24px;
+  padding: 1.9rem 1.8rem 2rem;
+  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.45);
+  position: relative;
+}
+
+/* Back to home button at top */
+.cc-back-secondary {
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.cc-back-secondary:hover {
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.cc-auth-content {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.45rem;
 }
 
-/* Make inputs stretch across the panel */
+.cc-login-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.cc-login-desc {
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+/* Shared label / input styles */
+.cc-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4b5563;
+  margin-top: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
 .cc-login-input {
   width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  padding: 7px 10px;
+  font-size: 0.86rem;
+  box-sizing: border-box;
+  outline: none;
+  background: #ffffff;
 }
 
-/* Link under the primary button */
+.cc-login-input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.4);
+}
+
+/* Error message */
+.cc-login-error {
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+/* Primary auth buttons */
+.cc-button-primary {
+  margin-top: 0.9rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #1d4ed8;
+  color: #eff6ff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.cc-button-primary:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.cc-button-primary--yellow,
+.cc-login-submit--yellow {
+  background: #ffc928;
+  color: #111827;
+  box-shadow: 0 12px 26px rgba(234, 179, 8, 0.5);
+}
+
+.cc-button-primary--yellow:hover,
+.cc-login-submit--yellow:hover {
+  background: #f3b518;
+}
+
+/* Align main auth button in these screens */
+.cc-login-submit {
+  align-self: flex-start;
+}
+
+/* Text link under the button */
+.cc-text-link,
 .cc-auth-link {
-  margin-top: 0.75rem;
-  text-align: center;
+  margin-top: 0.6rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #1d4ed8;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
-/* Mobile tweaks */
-@media (max-width: 768px) {
-  .cc-auth-wrapper {
-    padding: 1.75rem 1.25rem 2.25rem;
-    border-radius: 40px;
+/* ===================================================== */
+/* AUTH SPLIT SCREEN � SIDE BY SIDE LOGIN / CREATE       */
+/* ===================================================== */
+
+.cc-authsplit-page {
+  min-height: 100vh;
+  padding: 3.2rem 1.5rem 2.6rem;
+  display: flex;
+  flex-direction: column;      /* ?? stack logo + card vertically */
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+
+/* Back button at the very top */
+.cc-authsplit-back {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  border: none;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: rgba(15, 23, 42, 0.15);
+  color: #f9fafb;
+  cursor: pointer;
+}
+
+.cc-authsplit-back:hover {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.cc-authsplit-shell {
+  width: 100%;
+  max-width: 960px;
+}
+
+.cc-authsplit-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.45);
+}
+
+/* Panels */
+.cc-authsplit-panel {
+  background: #f9fafb;
+  padding: 2rem 2.2rem;
+}
+
+.cc-authsplit-panel--blue {
+  background: #e0f2fe;
+}
+
+/* Re-use login/create typography + fields here */
+.cc-authsplit-panel .cc-login-title {
+  margin-top: 0;
+}
+
+.cc-authsplit-panel .cc-login-desc {
+  margin-bottom: 0.9rem;
+}
+
+/* Responsive: stack panels on small screens */
+@media (max-width: 900px) {
+  .cc-authsplit-page {
+    padding: 2.6rem 1.1rem 2.3rem;
   }
 
-  .cc-auth-panel {
-    max-width: none;
+  .cc-authsplit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-authsplit-panel {
+    padding: 1.7rem 1.6rem;
+  }
+
+  .cc-authsplit-back {
+    top: 0.7rem;
+  }
+}
+
+
+/* Small-screen tweak */
+@media (max-width: 640px) {
+  .cc-auth-wrapper {
+    border-radius: 18px;
+    padding: 1.6rem 1.3rem 1.7rem;
+  }
+}
+
+
+/* Tweak responsive behavior for new layout */
+@media (max-width: 960px) {
+  .cc-desktop-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-results-section {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .cc-auth-card {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-auth-right {
+    padding: 1.5rem 1.5rem 1.75rem;
   }
 }

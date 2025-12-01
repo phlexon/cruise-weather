@@ -1,7 +1,6 @@
 // src/services/weather.ts
 
 export type WeatherIcon = "sunny" | "partly" | "cloudy" | "rain";
-
 export type WeatherSource = "forecast" | "climatology";
 
 export type DailyForecast = {
@@ -17,6 +16,39 @@ export type ForecastOptions = {
   /** NCEI station ID, e.g. "USW00012839" for Miami Intl Airport. */
   nceiStationId?: string;
 };
+
+export function normalizePortName(raw: string): string {
+  if (!raw) return "Miami, FL"; // fallback
+
+  const lower = raw.toLowerCase();
+
+  if (lower.includes("sea")) return "Caribbean Sea"; // safe location
+
+  if (lower.includes("fort lauderdale")) return "Fort Lauderdale, FL";
+  if (lower.includes("miami")) return "Miami, FL";
+  if (lower.includes("nasau")) return "Nassau, Bahamas";
+  if (lower.includes("cozumel")) return "Cozumel, Mexico";
+
+  // strip extra descriptors like "Port Everglades, Florida"
+  return raw.split(",")[0];
+}
+
+// Map our city string to the format Tomorrow.io likes (lat,lon where possible)
+function toTomorrowLocation(city: string): string {
+  const lower = city.toLowerCase();
+
+  // Known embarkation / cruise ports – use lat,lon so Tomorrow.io never has to geocode
+  if (lower.includes("fort lauderdale")) return "26.1224,-80.1373";
+  if (lower.includes("miami")) return "25.7617,-80.1918";
+  if (lower.includes("port canaveral")) return "28.4058,-80.6042";
+  if (lower.includes("galveston")) return "29.3013,-94.7977";
+  if (lower.includes("tampa")) return "27.9506,-82.4572";
+  if (lower.includes("nassau")) return "25.0478,-77.3554";
+  if (lower.includes("cozumel")) return "20.4220,-86.9223";
+
+  // Fallback: send the raw city; if Tomorrow.io can parse it, great
+  return city;
+}
 
 // In-memory cache: key = city|dates|station => { [date]: DailyForecast }
 const forecastCache: Record<string, Record<string, DailyForecast>> = {};
@@ -44,7 +76,6 @@ const NCEI_PROXY_BASE = import.meta.env.VITE_NCEI_PROXY_BASE_URL;
  *
  * - If VITE_NCEI_PROXY_BASE_URL is set (e.g. "/api"), we call:
  *     "<base>/ncei-normals?stationId=..."
- *   so "/api" → "/api/ncei-normals?..."
  *
  * - If it's NOT set, we fall back to:
  *     "/api/ncei-normals?stationId=..."
@@ -283,11 +314,15 @@ export async function getDailyForecastsForCity(
   const apiKey = import.meta.env.VITE_TOMORROW_API_KEY;
 
   if (!apiKey) {
-    throw new Error("VITE_TOMORROW_API_KEY is missing in this build.");
+    console.warn(
+      "[Weather] VITE_TOMORROW_API_KEY is missing – returning empty forecast."
+    );
+    return {};
   }
 
   if (!city || !dates.length) {
-    throw new Error("City or dates missing for forecast request.");
+    console.warn("[Weather] City or dates missing for forecast request.");
+    return {};
   }
 
   const cacheKey = makeCacheKey(city, dates, options);
@@ -295,41 +330,70 @@ export async function getDailyForecastsForCity(
     return forecastCache[cacheKey];
   }
 
-  const startDate = dates[0];
-  const endDate = dates[dates.length - 1];
+  // --- Build safe start/end times ---------------------------------
+  // dates are "YYYY-MM-DD"
+  const sorted = [...dates].sort();
+  const firstDateStr = sorted[0];
+  const lastDateStr = sorted[sorted.length - 1];
+
+  // Convert to Date objects in UTC
+  const earliest = new Date(firstDateStr + "T00:00:00Z");
+  const latest = new Date(lastDateStr + "T23:59:59Z");
+  const now = new Date();
+
+  // Clamp start to "now" if earliest is in the past
+  let startDate = earliest < now ? now : earliest;
+  let endDate = latest;
+
+  // Ensure start is never after end
+  if (startDate > endDate) {
+    startDate = endDate;
+  }
+
+  const startTimeIso = startDate.toISOString();
+  const endTimeIso = endDate.toISOString();
 
   const url = new URL("https://api.tomorrow.io/v4/weather/forecast");
-  url.searchParams.set("location", city);
+  url.searchParams.set("location", toTomorrowLocation(city));
   url.searchParams.set("timesteps", "1d");
   url.searchParams.set("apikey", apiKey);
-  url.searchParams.set("startTime", `${startDate}T00:00:00Z`);
-  url.searchParams.set("endTime", `${endDate}T23:59:59Z`);
+  url.searchParams.set("startTime", startTimeIso);
+  url.searchParams.set("endTime", endTimeIso);
   url.searchParams.set("units", "imperial");
 
   const res = await fetch(url.toString());
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+
     if (options?.nceiStationId) {
       console.warn(
         "[Tomorrow.io] Error, falling back entirely to climatology:",
         res.status,
         text.substring(0, 160)
       );
-      const climatologyOnly = await fillMissingWithClimatology(
-        dates,
-        {},
-        options.nceiStationId
-      );
-      if (Object.keys(climatologyOnly).length > 0) {
-        forecastCache[cacheKey] = climatologyOnly;
-        return climatologyOnly;
+      try {
+        const climatologyOnly = await fillMissingWithClimatology(
+          dates,
+          {},
+          options.nceiStationId
+        );
+        if (Object.keys(climatologyOnly).length > 0) {
+          forecastCache[cacheKey] = climatologyOnly;
+          return climatologyOnly;
+        }
+      } catch (err) {
+        console.warn("[NCEI] Climatology fallback failed:", err);
       }
     }
 
-    throw new Error(
-      `Tomorrow.io error ${res.status}: ${text.substring(0, 160)}`
+    // 👇 don’t crash the app; just log & return empty
+    console.warn(
+      "[Tomorrow.io] Error and no climatology available; returning empty forecast:",
+      res.status,
+      text.substring(0, 200)
     );
+    return {};
   }
 
   const data = await res.json();
@@ -340,7 +404,7 @@ export async function getDailyForecastsForCity(
   if (series.length) {
     for (const point of series) {
       const iso = point.time as string;
-      const dateKey = iso.slice(0, 10);
+      const dateKey = iso.slice(0, 10); // "YYYY-MM-DD"
       const values = point.values || {};
 
       const high = values.temperatureMax;
@@ -366,102 +430,32 @@ export async function getDailyForecastsForCity(
     }
   }
 
-  // Missing dates + debug
-  const missingDates = dates.filter((d) => !byDate[d]);
-  console.log("[Weather] Forecast debug:", {
-    city,
-    stationId: options?.nceiStationId ?? null,
-    requested: dates,
-    coveredByForecast: Object.keys(byDate),
-    missingDates,
-  });
+  // --- Optionally fill missing days with climatology --------------
+  let finalForecasts: Record<string, DailyForecast> = byDate;
 
-  // If Tomorrow.io covers all requested days, we're done
-  if (!missingDates.length) {
-    forecastCache[cacheKey] = byDate;
-    return byDate;
-  }
-
-  // If some dates are missing AND we have a station ID, fill with climatology
   if (options?.nceiStationId) {
-    let merged = await fillMissingWithClimatology(
-      dates,
-      byDate,
-      options.nceiStationId
-    );
-
-    let finalMissing = dates.filter((d) => !merged[d]);
-    console.log("[Weather] After climatology fill:", {
-      city,
-      stationId: options.nceiStationId,
-      finalMissing,
-      keysAfterFill: Object.keys(merged),
-    });
-
-    // 🔥 LAST-RESORT FALLBACK:
-    // If some dates are STILL missing, approximate them from the nearest
-    // available day so the UI always has a high/low to show.
-    if (finalMissing.length > 0) {
-      const availableKeys = Object.keys(merged).sort();
-      if (availableKeys.length > 0) {
-        for (const iso of finalMissing) {
-          const targetTime = new Date(iso).getTime();
-          if (Number.isNaN(targetTime)) continue;
-
-          let bestKey = availableKeys[0];
-          let bestDiff = Math.abs(
-            new Date(availableKeys[0]).getTime() - targetTime
-          );
-
-          for (let i = 1; i < availableKeys.length; i++) {
-            const k = availableKeys[i];
-            const diff = Math.abs(new Date(k).getTime() - targetTime);
-            if (diff < bestDiff) {
-              bestDiff = diff;
-              bestKey = k;
-            }
-          }
-
-          const base = merged[bestKey];
-          if (!base) continue;
-
-merged[iso] = {
-  ...base,
-  // Force these to visually look like "average" days
-  icon: "partly",
-  source: "climatology",
-  description:
-    base.source === "climatology"
-      ? base.description
-      : "Approximate conditions based on nearby days (used when detailed climatology is unavailable).",
-};
-
-        }
-
-        console.log("[Weather] Filled remaining missing by nearest neighbor:", {
-          finalMissingBefore: finalMissing,
-          keysAfterApprox: Object.keys(merged),
-        });
-
-        finalMissing = [];
+    const missingDates = dates.filter((d) => !finalForecasts[d]);
+    if (missingDates.length) {
+      console.warn(
+        "[Weather] Missing forecast dates, using climatology for:",
+        missingDates
+      );
+      try {
+        finalForecasts = await fillMissingWithClimatology(
+          dates,
+          finalForecasts,
+          options.nceiStationId
+        );
+      } catch (err) {
+        console.warn(
+          "[NCEI] Failed to fill missing dates with climatology:",
+          err
+        );
       }
     }
-
-    forecastCache[cacheKey] = merged;
-    return merged;
   }
 
-  // No climatology fallback configured: preserve original behavior
-  const matchingDates = dates.filter((d) => byDate[d]);
-  if (!matchingDates.length) {
-    const available = Object.keys(byDate);
-    throw new Error(
-      `No matching forecast dates. Requested: ${dates.join(
-        ", "
-      )} — Available: ${available.join(", ") || "none"}`
-    );
-  }
-
-  forecastCache[cacheKey] = byDate;
-  return byDate;
+  // Cache & return
+  forecastCache[cacheKey] = finalForecasts;
+  return finalForecasts;
 }

@@ -11,14 +11,14 @@ import type { CruiseSelection } from "./CruiseForm";
 
 type MobileCruiseWizardProps = {
   onSubmit: (selection: CruiseSelection) => void;
-  onBackToHome: () => void;          // ← NEW
+  onBackToHome: () => void;
 };
 
 type WizardStep = 1 | 2;
 
 export default function MobileCruiseWizard({
   onSubmit,
-  onBackToHome,                         // ← NEW
+  onBackToHome,
 }: MobileCruiseWizardProps) {
   const [step, setStep] = useState<WizardStep>(1);
 
@@ -60,7 +60,7 @@ export default function MobileCruiseWizard({
     };
   }, []);
 
-  // Filter ships → uses ship.lineId (matches your CruiseForm)
+  // Filter ships
   const shipsForLine = useMemo(() => {
     if (!selectedLineId) return [];
     return allShips
@@ -180,6 +180,7 @@ export default function MobileCruiseWizard({
             </select>
           </div>
 
+          {/* BUTTONS – NEXT FIRST, BACK SECOND */}
           <div
             style={{
               marginTop: "1.5rem",
@@ -188,7 +189,18 @@ export default function MobileCruiseWizard({
               gap: "10px",
             }}
           >
-            {/* FULL-WIDTH BACK → HOME */}
+            {/* NEXT: CHOOSE DATES */}
+            <button
+              type="button"
+              className="cc-cta cc-cta--border cc-cta--full"
+              disabled={!canGoNext}
+              onClick={() => setStep(2)}
+            >
+              <span className="cc-cta-label">NEXT: CHOOSE DATES</span>
+              <span className="cc-cta-icon">▶</span>
+            </button>
+
+            {/* BACK → HOME (NOW SECOND) */}
             <button
               type="button"
               className="cc-cta-button cc-cta-button--secondary"
@@ -197,19 +209,6 @@ export default function MobileCruiseWizard({
             >
               Back
             </button>
-
-            {/* FULL-WIDTH NEXT */}
-        <button
-  type="button"
-  className="cc-cta cc-cta--border cc-cta--full"
-  disabled={!canGoNext}
-  onClick={() => setStep(2)}
->
-  <span className="cc-cta-label">NEXT: CHOOSE DATES</span>
-  <span className="cc-cta-icon">▶</span>
-</button>
-
-
           </div>
         </>
       )}
