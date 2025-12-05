@@ -21,6 +21,51 @@ const CruiseResults: React.FC<CruiseResultsProps> = ({
     );
   }
 
+  // ---------------- SINGLE CRUISE MODE ----------------
+// ---------------- SINGLE CRUISE MODE ----------------
+if (results.length === 1) {
+  const cruise = results[0];
+  const departLabel = cruise.departIso
+    ? new Date(cruise.departIso).toLocaleDateString()
+    : "TBA";
+
+  return (
+    <section className="mt-6">
+      <div className="w-full rounded-2xl bg-white px-5 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600">
+              Current cruise
+            </p>
+
+            <h3 className="text-base font-semibold text-slate-900">
+              {cruise.title || "Cruise itinerary"}
+            </h3>
+
+            <p className="mt-1 text-sm text-slate-600">
+              {cruise.shipName} · {cruise.cruiseLine}
+            </p>
+          </div>
+
+          <div className="mt-2 flex flex-col items-start gap-1 sm:mt-0 sm:items-end">
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-[12px] font-medium text-blue-700 shadow-sm">
+              {departLabel}
+            </span>
+          </div>
+
+        </div>
+
+        <div className="mt-3 text-[12px] text-slate-500">
+          Viewing itinerary & forecast for this sailing below.
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+  // ---------------- MULTI-CRUISE MODE ----------------
   return (
     <div className="mt-6 space-y-3">
       {results.map((cruise, index) => {
@@ -48,7 +93,6 @@ const CruiseResults: React.FC<CruiseResultsProps> = ({
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                {/* 👇 label no longer hard-codes the number of days */}
                 <p className="text-[11px] text-slate-500 tracking-wide uppercase">
                   Round-trip cruise
                 </p>

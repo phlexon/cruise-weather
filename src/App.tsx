@@ -32,6 +32,8 @@ import { getNceiStationForCity } from "./data/nceiStations";
 import { sampleItinerary } from "./data/mockData";
 import type { SavedCruiseSelection } from "./components/SavedCruises";
 import { useAuth } from "./context/AuthContext";
+import GlobalHeader from "./components/GlobalHeader";
+
 
 // ---------------- TYPES ----------------
 
@@ -183,6 +185,9 @@ export default function App() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
+  // Global spinner activates if ANY major loading state is true
+  const isGlobalLoading = loadingSearch || loadingDetails;
+
 
   // Misc
   const [currentSailDate, setCurrentSailDate] = useState<string | null>(null);
@@ -303,7 +308,7 @@ export default function App() {
     }
   };
 
-  const handleSelectSavedCruise = (saved: SavedCruiseSelection) => {
+  const handleSelectSavedCruise = (sel: SavedCruiseSelection) => {
     setView("app");
     resetAppState();
     setHasSearched(true); // selecting a saved cruise is effectively a search
@@ -448,6 +453,8 @@ try {
     return (
       <>
         <CloudBackground />
+        {isGlobalLoading && <Spinner message="Loading…" />}
+
         <div className="cc-app cc-app--home">
           {user && (
             <AuthStatusBar
@@ -485,53 +492,64 @@ try {
     );
   }
 
+
   // SAVED CRUISES
-  if (view === "saved") {
-    return (
-      <>
-        <CloudBackground />
-        <div className="cc-app">
-          <AuthStatusBar
-            onGoToSaved={() => setView("saved")}
-            onLogin={() => setView("login")}
-            onCreateAccount={() => setView("createAccount")}
+// SAVED CRUISES
+if (view === "saved") {
+  return (
+    <>
+      <CloudBackground />
+      <div className="cc-app">
+        <AuthStatusBar
+          onGoToSaved={() => setView("saved")}
+          onLogin={() => setView("login")}
+          onCreateAccount={() => setView("createAccount")}
+        />
+
+        <GlobalHeader onBack={goHome} />
+
+        <header className="cc-app-header">
+          <img
+            src="/cruisecast-logo.png"
+            alt="CruiseCast"
+            className="cc-app-logo"
+            onClick={goHome}
+            style={{ cursor: "pointer" }}
           />
+          <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+        </header>
 
-          <header className="cc-app-header">
-            <img
-              src="/cruisecast-logo.png"
-              alt="CruiseCast"
-              className="cc-app-logo"
-              onClick={goHome}
-              style={{ cursor: "pointer" }}
+        <main className="cc-app-main cc-app-main--saved">
+          <div className="cc-app-main-inner">
+            <SavedCruisesScreen
+              onBack={() => setView("app")}
+              onSelectSaved={handleSelectSavedCruise}
             />
-            <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
-          </header>
+          </div>
+        </main>
 
-          <main className="cc-app-main">
-            <div className="cc-app-main-inner">
-              <SavedCruisesScreen
-                onBack={() => setView("app")}
-                onSelectSaved={handleSelectSavedCruise}
-              />
-            </div>
-          </main>
+        <footer className="cc-app-footer">
+          v1.0 — Cruises &amp; itineraries from Apify, weather by
+          Tomorrow.io &amp; NOAA NCEI.
+        </footer>
+      </div>
+    </>
+  );
+}
 
-          <footer className="cc-app-footer">
-            v1.0 — Cruises &amp; itineraries from Apify, weather by
-            Tomorrow.io &amp; NOAA NCEI.
-          </footer>
-        </div>
-      </>
-    );
-  }
 
   // LOGIN
   if (view === "login") {
     return (
       <>
         <CloudBackground />
+        {isGlobalLoading && <Spinner message="Loading…" />}
+
         <div className="cc-app">
+
+        <GlobalHeader onBack={goHome} />
+
+
           <header className="cc-app-header">
             <img
               src="/cruisecast-logo.png"
@@ -562,7 +580,13 @@ try {
     return (
       <>
         <CloudBackground />
+        {isGlobalLoading && <Spinner message="Loading…" />}
+
         <div className="cc-app">
+
+        <GlobalHeader onBack={goHome} />
+
+
           <header className="cc-app-header">
             <img
               src="/cruisecast-logo.png"
@@ -588,29 +612,66 @@ try {
     );
   }
 
-  // AUTH SPLIT
-  if (view === "authSplit") {
-    return (
-      <>
-        <CloudBackground />
-        <AuthSplitScreen
-          onBack={goHome}
-          onAuthSuccess={handleAuthSuccessToSaved}
-        />
-      </>
-    );
-  }
+// AUTH SPLIT
+if (view === "authSplit") {
+  return (
+    <>
+      <CloudBackground />
+      {isGlobalLoading && <Spinner message="Loading…" />}
+
+      <div className="cc-app">
+        {/* Global back-to-home bar (same component you like everywhere else) */}
+        <GlobalHeader onBack={goHome} />
+
+        {/* Same header as other screens */}
+        <header className="cc-app-header">
+          <img
+            src="/cruisecast-logo.png"
+            alt="CruiseCast"
+            className="cc-app-logo"
+            onClick={goHome}
+            style={{ cursor: "pointer" }}
+          />
+          <div className="cc-app-tagline">PLAN AHEAD • SAIL SMART</div>
+        </header>
+
+        <main className="cc-app-main">
+          <div className="cc-app-main-inner">
+            <AuthSplitScreen
+              onAuthSuccess={handleAuthSuccessToSaved}
+            />
+          </div>
+        </main>
+
+        <footer className="cc-app-footer">
+          v1.0 — Cruises &amp; itineraries from Apify, weather by Tomorrow.io
+          &amp; NOAA NCEI.
+        </footer>
+      </div>
+    </>
+  );
+}
+
+
+
+
 
   // MAIN APP (SEARCH + RESULTS + WEATHER)
   return (
     <>
       <CloudBackground />
+      {isGlobalLoading && <Spinner message="Loading…" />}
+
       <div className="cc-app">
+
+
         <AuthStatusBar
           onGoToSaved={() => setView("saved")}
           onLogin={() => setView("authSplit")}
           onCreateAccount={() => setView("createAccount")}
         />
+
+        <GlobalHeader onBack={goHome} />
 
         <header className="cc-app-header">
           <img
@@ -702,15 +763,7 @@ try {
                         >
                           ← Back to search
                         </button>
-                        <button
-                          type="button"
-                          className="cc-button cc-button--primary"
-                          onClick={() =>
-                            window.scrollTo({ top: 0, behavior: "smooth" })
-                          }
-                        >
-                          Top
-                        </button>
+                      
                       </div>
 
                       {loadingSearch ? (

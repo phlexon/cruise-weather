@@ -6,66 +6,82 @@ import SavedCruises, {
 } from "../components/SavedCruises";
 
 type SavedCruisesScreenProps = {
-  onBack: () => void;
-  onSelectSaved: (selection: SavedCruiseSelection) => void;
+  onBack: () => void; // currently unused but keep for future
+  onSelectSaved: (sel: SavedCruiseSelection) => void;
 };
 
 export default function SavedCruisesScreen({
-  onBack,
   onSelectSaved,
 }: SavedCruisesScreenProps) {
   const { user } = useAuth();
-  const email = user?.email ?? "CruiseCast traveler";
+
+  const email = user?.email ?? "";
+  const displayName =
+    (user?.user_metadata as { full_name?: string } | undefined)?.full_name ||
+    "CruiseCast traveler";
 
   return (
-    <section className="cc-main-card cc-account">
-      {/* Back button */}
-      <button
-        type="button"
-        className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
-        onClick={onBack}
-      >
-        ← Back to search
-      </button>
-
-      {/* Account header */}
-      <div className="cc-account-header">
-        <h1 className="cc-account-title">Your CruiseCast account</h1>
-        <p className="cc-account-subtitle">
-          Signed in as{" "}
-          <span className="cc-account-email">{email}</span>. View and reload the
-          cruises you’ve saved to quickly re-check their weather as your sail
-          date approaches.
+    <div className="cc-account-page">
+      {/* === Top hero card ================================================= */}
+      <section className="cc-account-hero">
+        <h1 className="cc-account-hero-title">Your CruiseCast Account</h1>
+        <p className="cc-account-hero-text">
+          Signed in as <strong>{email}</strong>. View and reload the cruises
+          you’ve saved. As your sail dates get closer, you can quickly re-check
+          their itinerary &amp; weather from here.
         </p>
-      </div>
+      </section>
 
-      {/* Two-column dashboard layout on desktop, stacked on mobile */}
-      <div className="cc-account-grid">
-        {/* Left column: account overview */}
-        <section className="cc-account-card">
-          <h2 className="cc-account-card-title">Account overview</h2>
-          <p className="cc-account-card-text">
-            CruiseCast lets you preview weather trends for your upcoming cruises
-            so you can plan outfits, excursions, and sea days with confidence.
+      {/* === Bottom two-column layout ===================================== */}
+      <section className="cc-account-panels">
+        {/* LEFT – account overview */}
+        <div className="cc-account-panel cc-account-panel-left">
+          <h2 className="cc-account-panel-title">Account overview</h2>
+
+          <dl className="cc-account-detail-list">
+            <div className="cc-account-detail-row">
+              <dt>Name</dt>
+              <dd>{displayName}</dd>
+            </div>
+            <div className="cc-account-detail-row">
+              <dt>Email</dt>
+              <dd>{email}</dd>
+            </div>
+          </dl>
+
+          <p className="cc-account-copy">
+            CruiseCast helps you keep tabs on the weather trends for your
+            upcoming cruises without having to rebuild the forecast from
+            scratch.
           </p>
 
-          <ul className="cc-account-card-list">
-            <li>Save any cruise from the results screen.</li>
-            <li>Return here to quickly reload its itinerary & weather.</li>
-            <li>Check back closer to sail date to see updated forecasts.</li>
+          <ul className="cc-account-bullets">
+            <li>
+              Reopen any saved cruise and reload its itinerary &amp; forecast.
+            </li>
+            <li>Watch how the forecast changes as you get closer to sail.</li>
+            <li>Compare multiple sailings on the same ship or itinerary.</li>
           </ul>
 
-          <p className="cc-account-card-footnote">
-            Tip: If you change ships or sail dates, just run a new search and
-            save the updated cruise.
-          </p>
-        </section>
+          <button
+            type="button"
+            className="cc-account-secondary-btn"
+            // you can wire this up later if you want to navigate
+          >
+            Check another cruise
+          </button>
+        </div>
 
-        {/* Right column: saved cruises list */}
-        <section className="cc-account-card cc-account-card--saved">
+        {/* RIGHT – saved cruises list */}
+        <div className="cc-account-panel cc-account-panel-right">
+          <h2 className="cc-account-panel-title">Saved cruises</h2>
+          <p className="cc-account-panel-subtitle">
+            Tap a cruise to reopen its itinerary &amp; forecast.
+          </p>
+
           <SavedCruises onSelectSaved={onSelectSaved} />
-        </section>
-      </div>
-    </section>
+        </div>
+      </section>
+    </div>
   );
 }

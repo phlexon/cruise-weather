@@ -1,16 +1,14 @@
 // src/components/WeatherTimeline.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useRef } from "react";
 
-export type TimelineIcon = "sunny" | "partly" | "cloudy" | "rain";
-
-export type TimelineDay = {
+type TimelineDay = {
   day: number;
   date?: string;
   location: string;
   high?: number;
   low?: number;
   rainChance?: number;
-  icon?: TimelineIcon;
+  icon?: "sunny" | "partly" | "cloudy" | "rain";
   description?: string;
   source?: "forecast" | "climatology";
 };
@@ -19,169 +17,145 @@ type WeatherTimelineProps = {
   itinerary: TimelineDay[];
 };
 
-const isBrowser = typeof window !== "undefined";
+function renderIcon(icon?: TimelineDay["icon"]) {
+  switch (icon) {
+    case "sunny":
+      return "☀️";
+    case "partly":
+      return "⛅️";
+    case "cloudy":
+      return "☁️";
+    case "rain":
+      return "🌧️";
+    default:
+      return "⛵️";
+  }
+}
 
 export default function WeatherTimeline({ itinerary }: WeatherTimelineProps) {
-  const [isMobile, setIsMobile] = useState<boolean>(() =>
-    isBrowser ? window.innerWidth < 768 : false
-  );
+  if (!itinerary || itinerary.length === 0) return null;
 
-  useEffect(() => {
-    if (!isBrowser) return;
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  const stripRef = useRef<HTMLDivElement | null>(null);
 
-  const cards = useMemo(() => itinerary ?? [], [itinerary]);
+  // Scroll the horizontal strip by ~one viewport of cards
+  const scrollStrip = (direction: "left" | "right") => {
+    const el = stripRef.current;
+    if (!el) return;
 
-  if (!cards.length) return null;
-
-  if (isMobile) {
-    return (
-      <div className="cc-weather-timeline cc-weather-timeline--mobile">
-        <div className="cc-weather-row-mobile">
-          {cards.map((day, idx) => (
-            <WeatherCard
-              key={day.date ?? `${day.day}-${idx}`}
-              day={day}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return <DesktopWeatherTimeline cards={cards} />;
-}
-
-type WeatherCardProps = {
-  day: TimelineDay;
-};
-
-function WeatherCard({ day }: WeatherCardProps) {
-  const isClimo = day.source === "climatology";
-
-  const iconName: TimelineIcon = day.icon || "sunny";
-  const iconSrc = `/icons/${iconName}.svg`;
-
-  const dateLabel = day.date
-    ? new Date(day.date + "T00:00:00Z").toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      })
-    : `Day ${day.day}`;
-
-  const badgeText = isClimo
-    ? "30-year average · Not a forecast"
-    : "Live forecast";
+    const amount = el.clientWidth * 0.9; // 90% of visible width
+    el.scrollBy({
+      left: direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+  };
 
   return (
-    <article
-      className={
-        "cc-weather-card " +
-        (isClimo ? "cc-weather-card--climo" : "cc-weather-card--forecast")
-      }
-    >
-      <header className="cc-weather-card-header">
-  <div className="cc-weather-card-date">
-    Day {day.day}
-    {dateLabel ? ` · ${dateLabel}` : ""}
-  </div>
+    <section className="cc-weather-timeline">
+      <h2 className="cc-section-title">Itinerary &amp; forecast</h2>
 
-  {/* badge now its own line */}
-  <div className="cc-weather-card-badge cc-weather-card-badge--block">
-    {badgeText}
-  </div>
-</header>
+      {/* Wrapper so we can place arrows on left/right for desktop */}
+      <div className="cc-weather-strip-wrapper">
+        {/* Left arrow – you can hide this on mobile via CSS */}
+        <button
+          type="button"
+          className="cc-weather-strip-arrow cc-weather-strip-arrow--left"
+          aria-label="Scroll itinerary left"
+          onClick={() => scrollStrip("left")}
+        >
+          ‹
+        </button>
 
+        {/* Horizontal strip – desktop: many cards with scroll, mobile: 1 at a time */}
+        <div className="cc-weather-strip" ref={stripRef}>
+          {itinerary.map((day) => {
+            const isForecast = day.source === "forecast";
+            const isClimo = day.source === "climatology";
+            const hasTemps =
+              typeof day.high === "number" && typeof day.low === "number";
 
-      <div className="cc-weather-icon-wrap">
-        <div className="cc-weather-icon">
-          <img src={iconSrc} alt={iconName} />
-        </div>
-      </div>
+            const cardClassName = [
+              "cc-weather-card",
+              isForecast && "cc-weather-card--forecast",
+              isClimo && "cc-weather-card--climo",
+              !day.source && "cc-weather-card--unknown",
+            ]
+              .filter(Boolean)
+              .join(" ");
 
-      <div className="cc-weather-temp-main">
-        {typeof day.high === "number" ? `${Math.round(day.high)}°` : "--"}
-      </div>
-      <div className="cc-weather-temp-sub">
-        {typeof day.high === "number" && typeof day.low === "number"
-          ? `High ${Math.round(day.high)}° · Low ${Math.round(day.low)}°`
-          : "High / low unavailable"}
-      </div>
+            const badgeText = isForecast
+              ? "Live forecast"
+              : isClimo
+              ? "Typical for this time of year"
+              : "Itinerary only";
 
-      {typeof day.rainChance === "number" && (
-        <div className="cc-weather-rain">
-          Chance of rain: <strong>{Math.round(day.rainChance)}%</strong>
-        </div>
-      )}
+            return (
+              <article key={day.date ?? day.day} className={cardClassName}>
+                <header className="cc-weather-card-header">
+                  <div className="cc-weather-card-day">
+                    <span>Day {day.day}</span>
+                    {day.date && (
+                      <span className="cc-weather-card-date">{day.date}</span>
+                    )}
+                  </div>
+                  <div className="cc-weather-card-icon">
+                    {renderIcon(day.icon)}
+                  </div>
+                </header>
 
-      <div className="cc-weather-location">
-        {day.location || "At sea"}
-      </div>
+                <div className="cc-weather-card-location">{day.location}</div>
 
-      {day.description && (
-        <div className="cc-weather-description">{day.description}</div>
-      )}
-    </article>
-  );
-}
+                {hasTemps ? (
+                  <div className="cc-weather-card-temps">
+                    <div className="cc-weather-temp-high">
+                      <span className="cc-weather-temp-label">High</span>
+                      <span className="cc-weather-temp-value">
+                        {Math.round(day.high!)}°
+                      </span>
+                    </div>
+                    <div className="cc-weather-temp-low">
+                      <span className="cc-weather-temp-label">Low</span>
+                      <span className="cc-weather-temp-value">
+                        {Math.round(day.low!)}°
+                      </span>
+                    </div>
+                    <div className="cc-weather-temp-rain">
+                      <span className="cc-weather-temp-label">Rain</span>
+                      <span className="cc-weather-temp-value">
+                        {Math.round(day.rainChance ?? 0)}%
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="cc-weather-card-no-temps">
+                    Weather not available yet for this stop.
+                  </div>
+                )}
 
-type DesktopTimelineProps = {
-  cards: TimelineDay[];
-};
+                <p className="cc-weather-card-description">
+                  {day.description ??
+                    (hasTemps
+                      ? "Conditions for this stop."
+                      : "Check back closer to your sail date for live weather.")}
+                </p>
 
-function DesktopWeatherTimeline({ cards }: DesktopTimelineProps) {
-  const cardsPerPage = 3;
-  const totalPages = Math.max(1, Math.ceil(cards.length / cardsPerPage));
-  const [page, setPage] = useState(0);
-
-  const start = page * cardsPerPage;
-  const pageCards = cards.slice(start, start + cardsPerPage);
-
-  const goPrev = () => setPage((p) => Math.max(0, p - 1));
-  const goNext = () =>
-    setPage((p) => Math.min(totalPages - 1, p + 1));
-
-  return (
-    <div className="cc-weather-timeline cc-weather-timeline--desktop">
-      <div className="cc-weather-desktop-shell">
-        <div className="cc-weather-desktop-row">
-          <button
-            type="button"
-            className="cc-weather-nav-btn"
-            onClick={goPrev}
-            disabled={page === 0}
-            aria-label="Previous days"
-          >
-            ‹
-          </button>
-
-          <div className="cc-weather-desktop-cards">
-            {pageCards.map((day, idx) => (
-              <WeatherCard
-                key={day.date ?? `${day.day}-${start + idx}`}
-                day={day}
-              />
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className="cc-weather-nav-btn"
-            onClick={goNext}
-            disabled={page === totalPages - 1}
-            aria-label="Next days"
-          >
-            ›
-          </button>
+                <div className="cc-weather-card-footer">
+                  <span className="cc-weather-card-badge">{badgeText}</span>
+                </div>
+              </article>
+            );
+          })}
         </div>
 
-        <div className="cc-weather-page-indicator">
-          Page {page + 1} of {totalPages}
-        </div>
+        {/* Right arrow */}
+        <button
+          type="button"
+          className="cc-weather-strip-arrow cc-weather-strip-arrow--right"
+          aria-label="Scroll itinerary right"
+          onClick={() => scrollStrip("right")}
+        >
+          ›
+        </button>
       </div>
-    </div>
+    </section>
   );
 }

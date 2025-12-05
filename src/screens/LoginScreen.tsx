@@ -5,101 +5,151 @@ import { useAuth } from "../context/AuthContext";
 type LoginScreenProps = {
   onBack: () => void;
   onAuthSuccess: () => void;
-  onGoToCreate: () => void;
 };
 
-export default function LoginScreen({
-  onBack,
-  onAuthSuccess,
-  onGoToCreate,
-}: LoginScreenProps) {
-  const { signIn } = useAuth();
+export default function LoginScreen({ onBack, onAuthSuccess }: LoginScreenProps) {
+  const { signIn, signUp } = useAuth();
 
+  // -------- SIGN IN STATE --------
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [error, setError] = useState("");
+
+  // -------- CREATE ACCOUNT STATE --------
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   async function handleSignIn() {
     setError("");
+    const { error } = await signIn(email, password);
+    if (error) {
+      setError(error.message);
+    } else {
+      onAuthSuccess();
+    }
+  }
 
-    try {
-      const result = await signIn(email, password);
-
-      // Handle null / undefined result safely
-      const authError = (result as any)?.error ?? null;
-
-      if (authError) {
-        setError(authError.message ?? "Unable to sign in.");
-      } else {
-        onAuthSuccess();
-      }
-    } catch (e: any) {
-      console.error("Sign-in failed:", e);
-      setError(e?.message ?? "Something went wrong signing you in.");
+  async function handleCreateAccount() {
+    setCreateError("");
+    const { error } = await signUp(newEmail, newPassword);
+    if (error) {
+      setCreateError(error.message);
+    } else {
+      onAuthSuccess();
     }
   }
 
   return (
-    <div className="cc-auth-wrapper">
-      {/* Top logo */}
-      <div className="cc-auth-logo-wrap">
-        <img
-          src="/cruisecast-logo.png"
-          alt="CruiseCast"
-          className="cc-auth-logo"
-        />
-      </div>
+    <div className="cc-auth-outer">
+      <div className="cc-auth-wrapper">
+        <section className="cc-main-card cc-login-card">
+          {/* BACK TO HOME */}
+          <button
+            type="button"
+            onClick={onBack}
+            className="cc-login-back-button"
+          >
+            ← Back to Home
+          </button>
 
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="cc-back-secondary"
-        type="button"
-      >
-        ← Back to Home
-      </button>
+          <div className="cc-login-grid">
+            {/* LEFT: SIGN IN */}
+            <div className="cc-login-col cc-login-col--left">
+              <h2 className="cc-login-title">Sign in to CruiseCast</h2>
+              <p className="cc-login-desc">
+                Use your email and a password to save sailings you care about.
+                You can return any time and reload their forecast instantly.
+              </p>
 
-      <div className="cc-auth-content">
-        <h2 className="cc-login-title">Sign in to CruiseCast</h2>
+              <label className="cc-label">Email</label>
+              <input
+                type="email"
+                className="cc-login-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
 
-        <p className="cc-login-desc">
-          Use your email and a password to save sailings you care about. You can
-          return anytime and reload their forecast instantly.
-        </p>
+              <label className="cc-label">Password</label>
+              <div className="cc-password-row">
+                <input
+                  type={showSignInPassword ? "text" : "password"}
+                  className="cc-login-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="cc-password-toggle"
+                  onClick={() => setShowSignInPassword((v) => !v)}
+                >
+                  👁 {showSignInPassword ? "Hide" : "Show"}
+                </button>
+              </div>
 
-        <label className="cc-label">Email</label>
-        <input
-          type="email"
-          className="cc-login-input"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+              {error && <div className="cc-login-error">{error}</div>}
 
-        <label className="cc-label">Password</label>
-        <input
-          type="password"
-          className="cc-login-input"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+              <button
+                type="button"
+                onClick={handleSignIn}
+                className="cc-button-primary cc-login-submit"
+              >
+                Sign In
+              </button>
+            </div>
 
-        {error && <div className="cc-login-error">{error}</div>}
+            {/* RIGHT: CREATE ACCOUNT */}
+            <div className="cc-login-col cc-login-col--right">
+              <h2 className="cc-login-title">Create your CruiseCast account</h2>
+              <p className="cc-login-desc">
+                Creating an account lets you save your favorite cruises and
+                quickly re-check their weather at any time. Your forecasts stay
+                synced and easy to access across devices.
+              </p>
 
-        <button
-          onClick={handleSignIn}
-          type="button"
-          className="cc-button-primary cc-login-submit"
-        >
-          Sign In
-        </button>
+              <label className="cc-label">Email</label>
+              <input
+                type="email"
+                className="cc-login-input"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
 
-        <button
-          type="button"
-          className="cc-text-link cc-auth-link"
-          onClick={onGoToCreate}
-        >
-          Don’t have an account? Create one instead
-        </button>
+              <label className="cc-label">Password</label>
+              <div className="cc-password-row">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  className="cc-login-input"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="cc-password-toggle"
+                  onClick={() => setShowNewPassword((v) => !v)}
+                >
+                  👁 {showNewPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+
+              {createError && (
+                <div className="cc-login-error">{createError}</div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleCreateAccount}
+                className="cc-button-primary cc-button-primary--yellow cc-login-submit"
+              >
+                Create Account
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

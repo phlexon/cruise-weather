@@ -193,13 +193,13 @@ export default function CruiseForm({ onSubmit }: CruiseFormProps) {
           >
             {sailingsError}
           </div>
-        ) : calendarSailings.length ? (
+        ) : calendarSailings.length > 0 ? (
           <SailingsCalendar
             sailings={calendarSailings}
             selectedDate={sailDate}
             onSelectDate={handleCalendarSelect}
           />
-        ) : (
+        ) : selectedShipId && !loadingCalendar && !sailingsError ? (
           <div
             style={{
               fontSize: "0.8rem",
@@ -210,7 +210,7 @@ export default function CruiseForm({ onSubmit }: CruiseFormProps) {
             No sailings found yet for this ship. Try a different ship or check
             back later.
           </div>
-        )}
+        ) : null}
 
         <p
           style={{

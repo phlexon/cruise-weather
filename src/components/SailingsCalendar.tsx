@@ -206,7 +206,7 @@ export default function SailingsCalendar({
 
           const baseBg = day.inMonth ? "#f9fafb" : "#f3f4f6";
           const sailingBg = day.hasSailing ? "#dbeafe" : baseBg;
-          const finalBg = isSelected ? "#2563eb" : sailingBg;
+          const finalBg = isSelected ? "#2b4680" : sailingBg;
 
           const baseColor = day.inMonth ? "#111827" : "#9ca3af";
           const finalColor = isSelected ? "white" : baseColor;

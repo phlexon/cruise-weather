@@ -41,15 +41,7 @@ export default function CreateAccountScreen({
 
   return (
     <div className="cc-auth-wrapper">
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="cc-cta-button cc-cta-button--secondary cc-back-secondary"
-        type="button"
-      >
-        ← Back to Home
-      </button>
-
+     
       <div className="cc-auth-content">
         <h2 className="cc-login-title">Create your CruiseCast account</h2>
 
