@@ -1,0 +1,4092 @@
+/* src/App.css */
+
+/* === Base app layout & background === */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: linear-gradient(
+    to bottom,
+    #214a7e 0%,
+    #1f7ece 45%,
+    #f4d7a1 100%
+  );
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Root app container */
+
+.cc-app {
+  min-height: 100vh;
+  margin: 0;
+  padding: 2.5rem 1.5rem 2rem;
+  background: transparent;  /* ?? IMPORTANT */
+  display: flex;
+  flex-direction: column;
+  font-family: "Jost", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.cc-app-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+	padding-top: 1rem;
+	margin-bottom: 2rem;
+}
+
+.cc-app-main-inner {
+  width: 100%;
+  max-width: 1040px;
+}
+
+/* HEADER */
+
+.cc-app-header {
+  max-width: 1040px;
+  margin: 0 auto 3rem auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.9rem;
+  color: #ffffff;
+}
+
+.cc-app-logo {
+  height: 80px;        /* was 52px */
+  max-height: 80px;
+  object-fit: contain;
+}
+
+
+.cc-app-tagline {
+  font-size: 0.8rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+/* FOOTER */
+
+.cc-app-footer {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 1.25rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: rgba(15, 23, 42, 0.72);
+  text-align: center;
+}
+
+/* MAIN CARD (desktop app view) */
+
+.cc-main-card {
+  width: 100%;
+  background: rgba(248, 250, 252, 0.96);
+  border-radius: 22px;
+  padding: 1.7rem 1.7rem 1.4rem;
+  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.33);
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+/* Simple header for the main card */
+
+.cc-main-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cc-main-title {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1f2937;
+}
+
+.cc-main-subtitle {
+  margin: 0;
+  margin-top: 0.2rem;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.cc-badge {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #e0f2fe;
+  color: #1d4ed8;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Basic error text inline */
+
+.cc-main-error {
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+/* Itinerary + explanation */
+
+.cc-itinerary-wrapper {
+  margin-top: 22px;
+}
+
+/* Force consistent card spacing */
+
+.cc-cruise-form-card,
+.cc-results-card,
+.cc-weather-card {
+  border-radius: 18px;
+  padding: 1.25rem 1.3rem;
+  background: #ffffff;
+}
+
+/* Alternate subtle background for forms */
+
+.cc-cruise-form-card {
+  background: #f9fafb;
+}
+
+/* Buttons used inside forms */
+
+.cc-inline-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.cc-inline-buttons button {
+  border-radius: 999px;
+  border: none;
+  font-size: 13px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Shared label + inputs */
+
+.cc-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+	margin-top: 15px;
+  color: #4b5563;
+}
+
+/* Simple utility for faint sub-label text */
+
+.cc-label-help {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Use for subtle chips or pill tags */
+
+.cc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: #4b5563;
+  font-size: 11px;
+}
+
+/* Simple small icon circle */
+
+.cc-chip-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Generic "inline" alert message */
+
+.cc-inline-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #4b5563;
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------ */
+/* Auth Status Bar (top notification/account strip)             */
+/* ------------------------------------------------------------ */
+
+.cc-auth-bar {
+  
+width: 100%;
+  max-width: 1040px;  
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.6);
+  color: #f9fafb;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.45);
+	margin-left: auto;
+  margin-right: auto;	
+}
+
+.cc-auth-bar-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* If you ever add an online dot or name span, it will sit nicely here */
+.cc-auth-bar-text strong {
+  font-weight: 600;
+}
+
+.cc-auth-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons inside the auth bar */
+.cc-auth-bar-button {
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #ffc928;
+  color: #152c4b;
+  display: inline-flex;
+  align-items: center;
+	text-align: center;
+	justify-content: center;
+	 width: 10rem;
+  gap: 4px;
+  white-space: nowrap;
+  transition: background-color 0.12s ease, transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.cc-auth-bar-button:hover {
+  background: rgba(15, 23, 42, 1);
+  transform: translateY(-1px);
+	 color: #eff3f7;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.5);
+}
+
+/* Highlighted primary button (Create Account) */
+.cc-auth-bar-button--primary {
+  width: 10rem;
+	 padding: 5px 12px;
+	background: #ffc928;
+  color: #111827;
+	justify-content: center;
+  box-shadow: 0 10px 24px rgba(234, 179, 8, 0.45);
+}
+
+.cc-auth-bar-button--primary:hover {
+  background: #f3b518;
+}
+
+/* Logged-out modifier (if your component uses it) */
+.cc-auth-bar.cc-auth-bar--logged-out {
+  background: rgba(15, 23, 42, 0.82);
+	
+}
+
+/* Small-screen behaviour: wrap nicely and center */
+@media (max-width: 640px) {
+  .cc-auth-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    padding: 15px 10px;
+  }
+
+  .cc-auth-bar-text {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cc-auth-bar-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ------------------------------------------------------------ */
+/* Cloud Background                                             */
+/* ------------------------------------------------------------ */
+
+.cc-clouds-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.cc-cloud {
+  position: absolute;
+  height: auto;
+  transform: translate3d(0, 0, 0);
+  animation-name: cc-cloud-drift-single;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.cc-cloud img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Default speeds for each cloud */
+
+.cc-cloud--slow {
+  animation-duration: 70s;
+}
+
+.cc-cloud--medium {
+  animation-duration: 50s;
+}
+
+.cc-cloud--fast {
+  animation-duration: 35s;
+}
+
+/* Spacing / size tweaks */
+
+.cc-cloud--large {
+  width: 280px;
+}
+
+.cc-cloud--medium-size {
+  width: 220px;
+}
+
+.cc-cloud--small {
+  width: 155px;
+}
+
+/* Keyframes: gentle horizontal drift */
+
+@keyframes cc-cloud-drift-single {
+  0% {
+    transform: translate3d(-10%, 0, 0);
+  }
+  100% {
+    transform: translate3d(110%, 0, 0);
+  }
+}
+
+/* Also support vertical offset animation if needed */
+
+@keyframes cc-cloud-float {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Ensure the app content stays above clouds */
+
+.cc-app,
+.cc-auth-shell {
+  position: relative;
+  z-index: 1;
+}
+
+/* -------------------------------------------------------- */
+/* HOME HERO LAYOUT (HomeScreen components)                 */
+/* -------------------------------------------------------- */
+
+.cc-hero-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.cc-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 0.75rem;
+}
+
+.cc-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 4px 9px 4px 5px;
+  background: rgba(15, 23, 42, 0.06);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.76);
+}
+
+.cc-hero-eyebrow-pill {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #10b981;
+  color: #ecfdf5;
+  font-size: 12px;
+}
+
+.cc-hero-title {
+  margin: 0;
+  font-size: 2.25rem;
+  letter-spacing: 0.03em;
+  color: #0f172a;
+}
+
+.cc-hero-highlight {
+  color: #1d4ed8;
+}
+
+.cc-hero-body {
+  margin: 0.4rem 0 0.75rem;
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.cc-hero-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* CTA button row */
+
+.cc-hero-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.cc-hero-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+}
+
+.cc-hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.cc-hero-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #9ca3af;
+}
+
+.cc-hero-stat-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Home – right card (mini app preview) */
+
+.cc-hero-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cc-hero-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(145deg, #0b1220 0%, #111827 60%, #1d4ed8 100%);
+  border-radius: 24px;
+  padding: 1.5rem 1.4rem 1.3rem;
+  color: #e5e7eb;
+  box-shadow: 0 24px 40px rgba(15, 23, 42, 0.55);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Tiny header row in hero card */
+
+.cc-hero-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cc-hero-card-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cc-hero-card-badge {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.cc-hero-card-badge span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #22c55e;
+  margin-right: 5px;
+}
+
+/* Body of hero preview card */
+
+.cc-hero-card-body {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #e5e7eb;
+}
+
+/* Small inline "sailing label" chips */
+
+.cc-hero-sailing-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.cc-hero-sailing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: rgba(15, 23, 42, 0.75);
+  font-size: 11px;
+}
+
+.cc-hero-sailing-day {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+}
+
+/* Tiny climates row inside hero preview */
+
+.cc-hero-card-climate-row {
+  margin-top: 1.1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cc-hero-card-climate {
+  font-size: 11px;
+  color: #cbd5f5;
+}
+
+/* -------------------------------------------------------- */
+/* CRUISE FORM (selectors & calendar reference)             */
+/* -------------------------------------------------------- */
+
+.cc-cruise-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cc-cruise-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.cc-select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  font-size: 13px;
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.cc-select:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+/* Date input styling */
+
+.cc-date-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.cc-date-input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+/* Submit row in form */
+
+.cc-form-submit-row {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Basic CTA button, kept for compatibility */
+
+.cc-cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: none;
+ font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+	width: 100%;
+  padding: 0.6rem 1rem;
+	margin-bottom: 20px;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.cc-cta-button--primary {
+  background: #1d4ed8;
+  color: #eff6ff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.45);
+}
+
+.cc-cta-button--primary:hover {
+  transform: translateY(-1px);
+}
+
+.cc-cta-button--secondary {
+  background: #ffc928;
+  color: #152c4b;
+}
+
+.cc-cta-button--secondary:hover {
+  background: #f6cf59;
+  color: #152c4b;
+}
+
+/* Little text under the button */
+
+.cc-form-footnote {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* -------------------------------------------------------- */
+/* CRUISE RESULTS LIST                                      */
+/* -------------------------------------------------------- */
+
+.cc-results-card {
+  margin-top: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+}
+
+.cc-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.cc-results-title {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #111827;
+}
+
+.cc-results-count {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Grid of result cards */
+
+.cc-results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.cc-result-card {
+  border-radius: 16px;
+  padding: 10px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.1s ease;
+  text-align: left;
+}
+
+.cc-result-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.18);
+  border-color: rgba(59, 130, 246, 0.85);
+}
+
+/* Selected state */
+
+.cc-result-card--selected {
+  border-color: rgba(234, 179, 8, 0.95);
+  box-shadow: 0 18px 40px rgba(234, 179, 8, 0.45);
+}
+
+/* Inner content */
+
+.cc-result-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cc-result-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.cc-result-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.cc-result-chip {
+  font-size: 10px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(219, 234, 254, 0.9);
+  color: #1d4ed8;
+}
+
+/* "No results" tip */
+
+.cc-results-empty {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* -------------------------------------------------------- */
+/* SPINNER                                                  */
+/* -------------------------------------------------------- */
+
+.cc-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.cc-spinner-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.8);
+  border-top-color: #1d4ed8;
+  animation: cc-spinner-rotate 0.7s linear infinite;
+}
+
+@keyframes cc-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* -------------------------------------------------------- */
+/* WEATHER TIMELINE                                         */
+/* -------------------------------------------------------- */
+
+.cc-weather-card {
+  margin-top: 18px;
+  background: linear-gradient(135deg, #0b1120, #1d4ed8);
+  border-radius: 20px;
+  padding: 1.2rem 1.3rem 1.1rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.cc-weather-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.cc-weather-title {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cc-weather-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: #cbd5f5;
+}
+
+/* Peeking gradient line at top */
+.cc-weather-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f97316, #22c55e, #38bdf8);
+  opacity: 0.9;
+}
+
+.cc-weather-strip-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.cc-weather-window {
+  width: 100%;
+  overflow: hidden;   /* THIS is what stops bleed */
+}
+
+.cc-weather-strip {
+  display: flex;
+  gap: 18px;
+  padding: 8px 4px 16px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* Row container for all days (desktop) */
+.cc-weather-row-desktop {
+  display: flex;
+  margin-top: 16px;
+  gap: 10px;
+}
+
+/* Each day card */
+.cc-day-card {
+  flex: 1;
+  min-width: 0;
+  border-radius: 14px;
+  padding: 10px 10px 9px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  font-size: 11px;
+  box-sizing: border-box;
+}
+
+/* Forecast vs climatology color hints */
+
+.cc-day-card--forecast {
+  background: radial-gradient(circle at top left, #f97316, #0f172a 60%);
+}
+
+.cc-day-card--climo {
+  background: radial-gradient(circle at top left, #22c55e, #0f172a 60%);
+}
+
+.cc-day-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.cc-day-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #93c5fd;
+}
+
+.cc-day-date {
+  font-size: 10px;
+  color: #cbd5f5;
+}
+
+/* Temperature row */
+.cc-day-temp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.cc-day-temp-high {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fee2e2;
+}
+
+.cc-day-temp-low {
+  font-size: 13px;
+  color: #bfdbfe;
+}
+
+/* Rain + icon row */
+.cc-day-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+/* Icon wrapper */
+.cc-day-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Rain chance */
+.cc-day-rain {
+  font-size: 11px;
+  color: #bfdbfe;
+}
+
+/* Location */
+.cc-day-location {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #e5e7eb;
+}
+
+/* Description */
+.cc-day-description {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #cbd5f5;
+}
+
+/* Mobile scroll row */
+.cc-weather-row-mobile {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-top: 12px;
+}
+
+.cc-weather-row-mobile::-webkit-scrollbar {
+  height: 5px;
+}
+
+.cc-weather-row-mobile::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 999px;
+}
+
+.cc-weather-row-mobile::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.7);
+  border-radius: 999px;
+}
+
+/* Desktop layout */
+
+.cc-weather-timeline--desktop {
+  width: 100%;
+}
+
+.cc-weather-desktop-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cc-weather-desktop-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.cc-weather-desktop-cards {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+}
+
+/* Live forecast card: brighter, warm accent */
+.cc-weather-card--forecast {
+  border-color: rgba(250, 204, 21, 0.7); /* amber-300-ish */
+  box-shadow: 0 16px 35px rgba(251, 191, 36, 0.28);
+}
+
+.cc-weather-card--forecast .cc-weather-card-badge {
+  background: rgba(250, 204, 21, 0.16);
+  color: #92400e;
+}
+
+/* Climatology (normals) card: cooler, dashed border, slightly muted */
+.cc-weather-card--climo {
+  border-style: dashed;
+  border-color: rgba(59, 130, 246, 0.7); /* blue-500-ish */
+  background: linear-gradient(
+    to bottom,
+    rgba(191, 219, 254, 0.45),
+    rgba(219, 234, 254, 0.15)
+  );
+}
+
+.cc-weather-card--climo .cc-weather-card-badge {
+  background: rgba(59, 130, 246, 0.16);
+  color: #1d4ed8;
+}
+
+/* Itinerary-only card: neutral, dashed, subtle */
+.cc-weather-card--unknown {
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.7); /* slate-400-ish */
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.cc-weather-card--unknown .cc-weather-card-badge {
+  background: rgba(148, 163, 184, 0.16);
+  color: #374151;
+}
+
+
+/* WEATHER TIMELINE WRAPPER */
+.cc-weather-timeline {
+  margin-top: 1.5rem;
+		text-align: center;
+
+}
+
+
+/* Header with day + icon */
+.cc-weather-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.cc-weather-card-day {
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.cc-weather-card-date {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+}
+
+.cc-weather-card-icon {
+  font-size: 1.8rem;
+}
+
+/* Location line */
+.cc-weather-card-location {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+/* Temps row */
+.cc-weather-card-temps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.cc-weather-temp-high,
+.cc-weather-temp-low,
+.cc-weather-temp-rain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.8rem;
+}
+
+.cc-weather-temp-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  color: #6b7280;
+}
+
+.cc-weather-temp-value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.cc-weather-card-no-temps {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+/* Description text */
+.cc-weather-card-description {
+  font-size: 0.8rem;
+  color: #4b5563;
+  margin-bottom: 0.6rem;
+  flex: 1;
+}
+
+/* Footer / badge row */
+.cc-weather-card-footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.cc-weather-card-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+
+/* Section title is already used elsewhere, but just in case */
+.cc-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+}
+
+/* Desktop: responsive grid; mobile gets overridden below */
+.cc-weather-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+
+/* Label showing which pieces are forecast vs climo */
+
+.cc-weather-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #cbd5f5;
+}
+
+.cc-weather-legend-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.cc-weather-legend-pill--forecast {
+  background: rgba(248, 113, 113, 0.3);
+}
+
+.cc-weather-legend-pill--climo {
+  background: rgba(52, 211, 153, 0.3);
+}
+
+/* ============================
+   Account / Saved Cruises Screen
+   ============================ */
+
+/* ============================
+   Account / Saved Cruises Screen
+   ============================ */
+
+.cc-account {
+  max-width: 1120px;
+  margin: 0 auto 2.5rem;
+  padding: 2.5rem 2.75rem 2.75rem;
+  border-radius: 26px;
+  background: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.cc-account-header {
+  margin-bottom: 1.75rem;
+}
+
+.cc-account-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #0f172a;
+  margin: 0 0 0.35rem;
+}
+
+.cc-account-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Layout: summary left, saved list right */
+.cc-account-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+  gap: 1.75rem;
+}
+
+@media (max-width: 768px) {
+  .cc-account {
+    padding: 1.5rem 1.5rem 1.75rem;
+    border-radius: 20px;
+  }
+
+  .cc-account-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Left column */
+.cc-account-summary {
+  padding: 1.1rem 1.25rem;
+  border-radius: 18px;
+  background: rgba(226, 232, 240, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.cc-account-summary-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 0.5rem;
+}
+
+.cc-account-summary-list {
+  padding-left: 1rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.cc-account-summary-list li + li {
+  margin-top: 0.25rem;
+}
+
+/* Right column header */
+.cc-account-saved > .cc-account-summary-title {
+  margin-bottom: 0.75rem;
+}
+
+/* Saved cruises list itself (reusing your class names) */
+.cc-saved-container {
+  background: transparent;
+  padding: 0;
+}
+
+.cc-saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Individual saved cruise rows */
+.cc-saved-item {
+  width: 100%;
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.cc-saved-item:hover {
+  background: #e0f2fe;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  transform: translateY(-1px);
+}
+
+.cc-saved-item-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.15rem;
+}
+
+.cc-saved-item-date {
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+/* Messages: loading / empty / error */
+.cc-saved-loading,
+.cc-saved-empty {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.cc-saved-error {
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+.cc-saved-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  margin-bottom: 12px;
+  background: #f5f7fa;
+  border-radius: 22px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.cc-remove-btn:hover {
+  color: #e11d48;
+  transform: scale(1.1);
+}
+
+
+/* -------------------------------------------------------- */
+/* LOGIN / CREATE ACCOUNT SCREENS                           */
+/* -------------------------------------------------------- */
+
+.cc-auth-layout {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.cc-auth-card-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 42px rgba(15, 23, 42, 0.5);
+  background: #f9fafb;
+}
+
+/* Left section (brand / explanation) */
+
+.cc-auth-left {
+  background: #0b1120;
+  color: #e5e7eb;
+  padding: 2rem 2.25rem;
+  position: relative;
+}
+
+.cc-auth-left-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cc-auth-left-body {
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: #cbd5f5;
+}
+
+/* Right section (form) */
+
+.cc-auth-form-shell {
+  background: #e0f2fe;
+  padding: 2rem 2.25rem;
+}
+
+.cc-auth-form-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.cc-auth-form-description {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: #4b5563;
+}
+
+/* Auth form fields */
+
+.cc-auth-field {
+  margin-bottom: 0.85rem;
+}
+
+.cc-auth-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  font-size: 13px;
+  padding: 7px 10px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.cc-auth-input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.45);
+}
+
+/* Auth form button row */
+
+.cc-auth-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Small inline error */
+
+.cc-auth-error {
+  font-size: 12px;
+  color: #b91c1c;
+  margin-top: 4px;
+}
+
+/* -------------------------------------------------------- */
+/* HOME: FOOTER-LIKE DISCLOSURES                            */
+/* -------------------------------------------------------- */
+
+.cc-disclosure {
+  margin-top: 1.1rem;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* -------------------------------------------------------- */
+/* MOBILE WIZARD                                            */
+/* -------------------------------------------------------- */
+
+.cc-mobile-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cc-mobile-step-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.cc-mobile-step-title {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+/* Wizard nav on mobile uses cc-button now; older style remains for fallback */
+
+.cc-mobile-step-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.cc-mobile-step-nav button {
+  flex: 1;
+}
+
+/* Shift anything that should float above wizard */
+
+.cc-mobile-floating-caption {
+  margin-top: -0.2rem;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* -------------------------------------------------------- */
+/* SUCCESS / TOAST MESSAGES                                 */
+/* -------------------------------------------------------- */
+
+.cc-toast {
+  max-width: 680px;
+  margin: 0.9rem auto 1.75rem;
+  padding: 0.9rem 1.8rem;
+  border-radius: 999px;
+
+  /* Brand look: bright yellow banner with soft gradient */
+  background: #ffc928;
+  border: 1px solid #ffc928;
+
+  /* Text */
+  color: #0b2443; /* deep navy to match header */
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  /* Lift it off the page a bit */
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.45);
+}
+
+
+/* -------------------------------------------------------- */
+/* miscellaneous small components                           */
+/* -------------------------------------------------------- */
+
+.cc-kicker {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+/* Save Cruise button wrapper */
+
+.cc-save-wrapper {
+  margin-top: 10px;
+}
+
+.cc-save-button {width: 100%;
+    max-width: 1040px;
+    border-radius: 999px;
+    border: none;
+    padding: 0.6rem 1rem;
+    background: #ffc928;
+    color: #2b4680;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: none;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+    transition: transform 150ms 
+ease, box-shadow 150ms 
+ease, background 150ms 
+ease;
+}
+.cc-save-button:hover {
+  background: #526ca5;
+  border-color: #2b4680;
+}
+
+/* tiny icon used inside save button */
+
+.cc-save-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+/* -------------------------------------------------------- */
+/* RESPONSIVE TWEAKS                                        */
+/* -------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .cc-hero-shell {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .cc-app {
+    padding: 2rem 1.25rem 1.75rem;
+  }
+
+  .cc-main-card {
+    padding: 1.5rem 1.35rem 1.25rem;
+    border-radius: 20px;
+  }
+
+  .cc-results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-hero-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-hero-left {
+    padding-right: 0;
+  }
+
+  .cc-hero-right {
+    margin-top: 1.1rem;
+  }
+
+  .cc-auth-card-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-auth-left {
+    padding: 1.7rem 1.6rem;
+  }
+
+  .cc-auth-form-shell {
+    padding: 1.5rem 1.6rem 1.7rem;
+  }
+
+  .cc-saved-main {
+    padding: 1.35rem 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .cc-app {
+    padding: 1.75rem 1rem 1.4rem;
+  }
+
+  .cc-app-header {
+    margin-bottom: 1.4rem;
+  }
+
+  .cc-app-logo {
+    height: 44px;
+  }
+
+  .cc-main-card {
+    padding: 1.35rem 1.1rem 1.1rem;
+  }
+
+  .cc-hero-title {
+    font-size: 1.75rem;
+  }
+
+  .cc-hero-card {
+    padding: 1.3rem 1.1rem 1.1rem;
+  }
+
+  .cc-results-card {
+    padding: 1.1rem 1.05rem;
+  }
+
+  .cc-weather-card {
+    padding: 1.1rem 1.05rem;
+  }
+
+  .cc-auth-left-title {
+    font-size: 1.1rem;
+  }
+
+  .cc-auth-form-title {
+    font-size: 0.96rem;
+  }
+
+  .cc-app-footer {
+    font-size: 0.7rem;
+  }
+
+  .cc-kicker {
+    font-size: 10px;
+  }
+}
+
+/* Extra-small */
+@media (max-width: 480px) {
+  .cc-hero-stat-row {
+    gap: 1rem;
+  }
+
+  .cc-saved-main {
+    border-radius: 18px;
+  }
+
+  .cc-auth-status-bar {
+    font-size: 11px;
+  }
+
+  .cc-auth-status-right {
+    gap: 4px;
+  }
+
+  .cc-auth-status-button {
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+}
+
+.cc-authsplit-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.7rem;
+}
+
+.cc-authsplit-logo {
+  height: 58px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
+}
+
+@media (max-width: 640px) {
+  .cc-authsplit-logo {
+    height: 48px;
+  }
+}
+
+
+/* ----------------------------------------- */
+/* SAVED CRUISES SCREEN — FINAL COLOR FIX    */
+/* ----------------------------------------- */
+
+/* ============================
+   Account / Saved Cruises Screen
+   ============================ */
+
+.cc-account {
+  max-width: 1120px;
+  margin: 0 auto 3rem auto;
+  padding: 2.25rem 2.75rem 2.5rem;
+  border-radius: 26px;
+  background: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.40);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.cc-account-header {
+  margin-bottom: 1.75rem;
+}
+
+.cc-account-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.4rem 0;
+}
+
+.cc-account-subtitle {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.cc-account-empty {
+  padding: 1.75rem 1.25rem;
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px dashed rgba(148, 163, 184, 0.8);
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+/* Saved list */
+
+.cc-saved-container {
+  margin-top: 1.75rem;
+}
+
+.cc-saved-header {
+  margin-bottom: 1rem;
+}
+
+.cc-saved-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem 0;
+  color: #0f172a;
+}
+
+.cc-saved-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.cc-saved-loading,
+.cc-saved-error,
+.cc-saved-empty {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.cc-saved-error {
+  color: #b91c1c;
+}
+
+.cc-saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cc-saved-item {
+  width: 100%;
+  text-align: left;
+  border-radius: 20px;
+  padding: 0.9rem 1.1rem;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+.cc-saved-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.cc-saved-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.cc-saved-item-line {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.cc-saved-item-ship {
+  font-size: 0.9rem;
+  color: #1d4ed8;
+}
+
+.cc-saved-item-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.cc-saved-item-date-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+}
+
+.cc-saved-item-date-value {
+  font-weight: 600;
+}
+
+.cc-saved-item-cta {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Mobile tweaks */
+@media (max-width: 768px) {
+  .cc-account {
+    margin: 0 0 2rem 0;
+    padding: 1.75rem 1.25rem 2.25rem;
+    border-radius: 22px;
+  }
+
+  .cc-saved-item {
+    border-radius: 18px;
+  }
+}
+
+/* Guarantee that the root app background remains gradient */
+body,
+html,
+#root {
+  background: #214a7e;
+}
+
+/* ------------------------------------------------------ */
+/* LOGIN / AUTH: override to keep outer area gradient     */
+/* ------------------------------------------------------ */
+
+/* Remove outer "box" for login screen in app frame */
+.cc-main-card.cc-login-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove outer "box around the login boxes" */
+.cc-auth-outer {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Add breathing room from header when login is shown */
+.cc-login-offset {
+  margin-top: 0.75rem;
+}
+
+/* More polished login footer note */
+.cc-login-footnote {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+/* --------------------------- */
+/* MOBILE CLOUD SCALING FIX    */
+/* --------------------------- */
+
+/* ?? MOBILE: make clouds smaller without shifting positions */
+@media (max-width: 767px) {
+  .cc-clouds-bg {
+    transform: scale(0.45);
+    transform-origin: top center;
+    overflow: visible !important;
+  }
+
+  /* ensure cloud images don't clip */
+  .cc-cloud {
+    transform-origin: top center;
+  }
+
+  /* Slight extra padding up top so top bar doesn't clash */
+  .cc-app {
+    padding-top: 2.1rem;
+  }
+}
+
+/* REMOVE OUTER BOX FOR LOGIN SCREEN — desktop + mobile */
+.cc-main-card.cc-login-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove outer "box around the login boxes" */
+.cc-auth-outer {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Cloud BG z-index safety */
+.cc-clouds-bg {
+  z-index: 0;
+}
+
+/* ===================================================== */
+/* Layout + components used by updated App.tsx           */
+/* ===================================================== */
+
+/* Home view modifier */
+.cc-app--home {
+  padding-top: 2.25rem;
+}
+
+/* Main desktop two-column layout for app view */
+.cc-desktop-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.cc-desktop-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cc-desktop-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+
+
+.cc-weather-section {
+  margin-top: 0.4rem;
+}
+
+/* Save button area */
+.cc-save-wrapper {
+  margin-top: 0.75rem;
+}
+
+.cc-save-wrapper--mobile {
+  margin: 1rem 0 0.25rem;
+}
+
+/* Mobile layout container */
+.cc-mobile-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Generic pill buttons */
+.cc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 1.1rem;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    background-color 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+}
+
+.cc-button--primary {
+  background: #ffc928;
+  color: #1f2937;
+  box-shadow: 0 14px 30px rgba(234, 179, 8, 0.4);
+}
+
+.cc-button--primary:hover {
+  background: #f3b518;
+  transform: translateY(-1px);
+}
+
+.cc-button--ghost {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.cc-button--ghost:hover {
+  background: rgba(15, 23, 42, 0.14);
+}
+
+.cc-button--link {
+  background: transparent;
+  box-shadow: none;
+  color: #0f172a;
+}
+
+/* Mobile results nav */
+.cc-mobile-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cc-mobile-nav .cc-button {
+  flex: 1;
+}
+
+/* Success toast after login/create */
+.cc-success-message {
+  max-width: 1040px;
+  margin: 0 auto 0.9rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: rgba(22, 163, 74, 0.1);
+  color: #047857;
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  text-align: center;
+}
+
+/* Error banners */
+.cc-error-banner {
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-size: 0.85rem;
+  border: 1px solid rgba(248, 113, 113, 0.7);
+}
+
+.cc-weather-error {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  color: #fecaca;
+}
+
+/* Small footnote under timeline */
+.cc-weather-footnote {
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+/* ===================================================== */
+/* LOGIN + CREATE ACCOUNT – SINGLE COLUMN SCREENS        */
+/* ===================================================== */
+
+.cc-auth-wrapper {
+width: 100%;
+	margin: 0 auto;
+  background: #f9fafb;
+  border-radius: 24px;
+  padding: 1.9rem 1.8rem 2rem;
+  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.45);
+  position: relative;
+}
+
+/* Back to home button at top */
+.cc-back-secondary {
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.cc-back-secondary:hover {
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.cc-auth-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cc-login-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.cc-login-desc {
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+/* Shared label / input styles */
+.cc-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4b5563;
+  margin-top: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.cc-login-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  padding: 7px 10px;
+  font-size: 0.86rem;
+  box-sizing: border-box;
+  outline: none;
+  background: #ffffff;
+}
+
+.cc-login-input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.4);
+}
+
+/* Error message */
+.cc-login-error {
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+/* Primary auth buttons */
+.cc-button-primary {
+  margin-top: 0.9rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(11, 53, 104, 0.9);
+  color: #eff6ff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    background-color 0.12s ease;
+	width: 10rem;
+}
+
+.cc-button-primary:hover {
+  background: #2b4680;
+  transform: translateY(-1px);
+}
+
+.cc-button-primary--yellow,
+.cc-login-submit--yellow {
+  background: #ffc928;
+  color: #111827;
+}
+
+.cc-button-primary--yellow:hover,
+.cc-login-submit--yellow:hover {
+  background: #f3b518;
+}
+
+/* Align main auth button in these screens */
+.cc-login-submit {
+  align-self: flex-start;
+}
+
+/* Text link under the button */
+.cc-text-link,
+.cc-auth-link {
+  margin-top: 0.6rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.8rem;
+  color: rgba(11, 53, 104, 0.9);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ===================================================== */
+/* AUTH SPLIT SCREEN – SIDE BY SIDE LOGIN / CREATE       */
+/* ===================================================== */
+
+.cc-authsplit-page {
+  min-height: 100vh;
+  padding: 3.2rem 1.5rem 2.6rem;
+  display: flex;
+  flex-direction: column;      /* ?? stack logo + card vertically */
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+
+/* Back button at the very top */
+.cc-authsplit-back {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  border: none;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: rgba(15, 23, 42, 0.15);
+  color: #f9fafb;
+  cursor: pointer;
+}
+
+.cc-authsplit-back:hover {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.cc-authsplit-shell {
+  width: 100%;
+	margin-bottom: 2rem;
+}
+
+.cc-authsplit-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.45);
+}
+
+/* Panels */
+.cc-authsplit-panel {
+  background: #f9fafb;
+  padding: 2rem 2.2rem;
+}
+
+.cc-authsplit-panel--blue {
+  background: #e0f2fe;
+}
+
+/* Re-use login/create typography + fields here */
+.cc-authsplit-panel .cc-login-title {
+  margin-top: 0;
+}
+
+.cc-authsplit-panel .cc-login-desc {
+  margin-bottom: 0.9rem;
+}
+
+/* Responsive: stack panels on small screens */
+@media (max-width: 900px) {
+  .cc-authsplit-page {
+    padding: 2.6rem 1.1rem 2.3rem;
+  }
+
+  .cc-authsplit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-authsplit-panel {
+    padding: 1.7rem 1.6rem;
+  }
+
+  .cc-authsplit-back {
+    top: 0.7rem;
+  }
+}
+
+
+/* Small-screen tweak */
+@media (max-width: 640px) {
+  .cc-auth-wrapper {
+    border-radius: 18px;
+    padding: 1.6rem 1.3rem 1.7rem;
+  }
+}
+
+
+/* Tweak responsive behavior for new layout */
+@media (max-width: 960px) {
+  .cc-desktop-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-results-section {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .cc-auth-card {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-auth-right {
+    padding: 1.5rem 1.5rem 1.75rem;
+  }
+}
+
+/* MOBILE: show one card per "page", horizontal scroll */
+@media (max-width: 767px) {
+  .cc-weather-strip {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.75rem;
+    scroll-snap-type: x mandatory;
+    padding: 0.25rem 0.1rem 0.75rem;
+  }
+
+  .cc-weather-strip::-webkit-scrollbar {
+    height: 4px;
+  }
+  .cc-weather-strip::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .cc-weather-strip::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.6);
+    border-radius: 999px;
+  }
+
+  .cc-weather-card {
+    flex: 0 0 100%;
+    max-width: 100%;
+    scroll-snap-align: start;
+  }
+}
+
+/* ---------------------------------------------------------
+   SINGLE CRUISE HEADER
+--------------------------------------------------------- */
+.cc-single-cruise-header {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 2rem 2.5rem;
+  margin: 1.5rem auto 2rem auto;
+  max-width: 1040px;
+  text-align: left;
+}
+
+.cc-single-cruise-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cc-single-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #2073ff;
+  letter-spacing: 0.12em;
+}
+
+.cc-single-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0b1f33;
+}
+
+.cc-single-sub {
+  color: #475569;
+  font-size: 1rem;
+}
+
+.cc-single-date {
+  margin-top: 0.3rem;
+  display: inline-block;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+  background: rgba(32, 115, 255, 0.12);
+  color: #2073ff;
+  border-radius: 50px;
+  width: fit-content;
+}
+
+.cc-single-link {
+  margin-top: 0.8rem;
+  font-size: 0.95rem;
+  color: #2073ff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cc-single-link:hover {
+  text-decoration: underline;
+}
+
+
+/* ===========================
+   WEATHER TIMELINE & CARDS
+   =========================== */
+
+.cc-weather-timeline {
+  margin-top: 1.5rem;
+}
+
+.cc-weather-timeline .cc-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+}
+
+/* STRIP: horizontal scroll everywhere */
+.cc-weather-strip {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  padding: 0.5rem 0 1rem;
+  scroll-snap-type: x mandatory;
+}
+
+.cc-weather-strip::-webkit-scrollbar {
+  height: 6px;
+}
+.cc-weather-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cc-weather-strip::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 999px;
+}
+
+/* BASE CARD */
+
+
+/* DESKTOP: fixed card width so 4 show at once in most viewports */
+@media (min-width: 768px) {
+  .cc-weather-card {
+    flex: 0 0 260px;
+    max-width: 260px;
+  }
+}
+
+/* MOBILE: one full-width card at a time */
+@media (max-width: 767px) {
+  .cc-weather-card {
+    flex: 0 0 86vw;
+    max-width: 86vw;
+  }
+}
+
+/* HEADER */
+.cc-weather-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.cc-weather-card-day {
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.cc-weather-card-date {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+}
+
+.cc-weather-card-icon {
+  font-size: 1.8rem;
+}
+
+/* LOCATION */
+.cc-weather-card-location {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+/* TEMPS ROW */
+.cc-weather-card-temps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.cc-weather-temp-high,
+.cc-weather-temp-low,
+.cc-weather-temp-rain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.8rem;
+}
+
+.cc-weather-temp-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  color: #6b7280;
+}
+
+.cc-weather-temp-value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.cc-weather-card-no-temps {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+/* DESCRIPTION */
+.cc-weather-card-description {
+  font-size: 0.8rem;
+  color: #4b5563;
+  margin-bottom: 0.6rem;
+  flex: 1;
+}
+
+/* FOOTER / BADGE */
+.cc-weather-card-footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.cc-weather-card-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* VARIANTS */
+
+/* ?? Live forecast – crisp white, warm accent */
+.cc-weather-card--forecast {
+  background: #ffffff;
+  border-color: rgba(250, 204, 21, 0.9);
+  box-shadow: 0 18px 40px rgba(250, 204, 21, 0.35);
+}
+
+.cc-weather-card--forecast .cc-weather-card-badge {
+  background: rgba(250, 204, 21, 0.16);
+  color: #92400e;
+}
+
+/* ?? Normals / climatology – soft blue background */
+.cc-weather-card--climo {
+  background: #e0f2fe;
+  border-color: rgba(37, 99, 235, 0.8);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.25);
+}
+
+.cc-weather-card--climo .cc-weather-card-location,
+.cc-weather-card--climo .cc-weather-temp-value {
+  color: #1e3a8a;
+}
+
+.cc-weather-card--climo .cc-weather-card-badge {
+  background: rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
+}
+
+/* ? Itinerary only – gray, dashed */
+.cc-weather-card--unknown {
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.7);
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.cc-weather-card--unknown .cc-weather-card-badge {
+  background: rgba(148, 163, 184, 0.16);
+  color: #374151;
+}
+
+/* --- GLOBAL HEADER WRAPPER --- */
+.cc-global-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 18px;
+  margin-bottom: 12px;
+  z-index: 50;
+}
+
+/* --- RESTORED "Back to Home" BUTTON STYLE --- */
+.cc-back-home-button {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 10px 22px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cc-back-home-button:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+/* Global "Back to Home" bar (matches older full-width pill style) */
+.cc-global-backbar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0rem 1.5rem; /* some top padding from the edge */
+}
+
+.cc-global-backbar-button {
+  width: 100%;
+  max-width: 1040px;
+  border-radius: 999px;
+  border: none;
+  padding: 0.6rem 1rem;
+  background: rgba(11, 53, 104, 0.9); /* deep blue strip */
+  color: #ffc928;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: none;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.cc-global-backbar-button:hover {
+  transform: translateY(-1px);
+  background: rgba(15, 69, 133, 0.95);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.45);
+}
+
+.cc-global-backbar-button:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+}
+
+.text-blue-700 {
+  color: #2b4680 !important;
+}
+
+/* Full-screen overlay */
+.cc-spinner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Card wrapper */
+.cc-spinner-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 30px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 20px;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.4);
+}
+
+/* Spinner icon wrapper */
+.cc-spinner-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG spinner */
+.cc-spinner-svg {
+  width: 48px;
+  height: 48px;
+  animation: cc-spin 0.8s linear infinite;
+  transform-origin: center;
+}
+
+/* Text */
+.cc-spinner-text {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Spin animation */
+@keyframes cc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cc-weather-strip-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Your existing .cc-weather-strip should already be flex + overflow-x auto */
+.cc-weather-strip {
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  display: flex;
+  gap: 1.5rem; /* whatever you already use */
+}
+
+/* ===========================
+   Itinerary & Weather strip
+   =========================== */
+
+.cc-weather-strip-wrapper {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto; /* left arrow, strip, right arrow */
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* The horizontal row of cards */
+.cc-weather-strip {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0.25rem 0;
+}
+
+/* Arrow buttons */
+.cc-weather-strip-arrow {
+  border: none;
+  background: rgba(15, 23, 42, 0.9);
+  color: #f9fafb;
+  width: 40px;
+  border-radius: 999px;
+  display: flex;              /* <<< make sure arrows actually render */
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.45);
+  flex-shrink: 0;             /* don’t let them squish to 0 width */
+  opacity: 0.95;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.cc-weather-strip-arrow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.6);
+  opacity: 1;
+}
+
+.cc-weather-strip-arrow--left {
+  justify-self: start;
+}
+
+.cc-weather-strip-arrow--right {
+  justify-self: end;
+}
+
+/* Hide arrows on smaller screens (mobile) */
+@media (max-width: 900px) {
+  .cc-weather-strip-wrapper {
+    grid-template-columns: 1fr;  /* just the strip, no side arrows */
+  }
+  .cc-weather-strip-arrow {
+    display: none;
+  }
+}
+
+.cc-password-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* the input already has your existing .cc-login-input styles */
+.cc-password-row .cc-login-input {
+  width: 100%;
+}
+
+.cc-password-toggle {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cc-password-toggle:hover {
+  background: #f3f4f6;
+}
+
+.cc-password-wrapper {
+  position: relative;
+}
+
+.cc-login-input--password {
+  padding-right: 40px;
+}
+
+.cc-password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   CruiseCast Account / Saved Cruises Screen
+   ============================================================ */
+
+/* ---------- Outer wrapper (no card here) ---------- */
+
+.cc-account-page {
+  max-width: 1120px;
+  margin: 0 auto 1rem;
+  padding: 0 0 3rem;
+}
+
+/* ---------- Top hero card ---------- */
+
+.cc-account-hero {
+  border-radius: 26px;
+  background: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  padding: 1.75rem 2.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.cc-account-hero-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+}
+
+.cc-account-hero-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+/* ---------- Two bottom cards (grid) ---------- */
+
+.cc-account-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 2rem;
+}
+
+.cc-account-panel {
+  border-radius: 26px;
+  background: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  padding: 1.9rem 2.4rem 2.2rem;
+}
+
+.cc-account-panel-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.cc-account-panel-subtitle {
+  margin: 0 0 1.4rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* ---------- Left panel content ---------- */
+
+.cc-account-detail-list {
+  margin: 0 0 1.3rem;
+}
+
+.cc-account-detail-row {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.cc-account-detail-row dt {
+  font-weight: 600;
+  color: #111827;
+}
+
+.cc-account-detail-row dd {
+  margin: 0;
+  color: #4b5563;
+}
+
+.cc-account-copy {
+  margin: 0 0 0.9rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.cc-account-bullets {
+  margin: 0 0 1.5rem 1.1rem;
+  padding: 0;
+  list-style: disc;
+  font-size: 0.88rem;
+  color: #4b5563;
+}
+
+.cc-account-secondary-btn {
+  width: 100%;
+    padding: 0.6rem 1rem;
+	border-radius: 999px;
+  border: none;
+  background: rgba(11, 53, 104, 0.9); /* deep blue */
+  color: #ffc928;                      /* CruiseCast yellow */
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+
+  display: flex;
+  align-items: center;
+  justify-content: center; /* centers text */
+  text-align: center;
+
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.12s ease-out,
+    background 0.12s ease-out;
+}
+
+.cc-account-secondary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(6, 24, 44, 0.55);
+}
+
+.cc-account-secondary-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 8px 14px rgba(6, 24, 44, 0.4);
+}
+
+/* Yellow variant – same animation, different colors */
+.cc-account-secondary-btn--yellow {
+  background: #ffc928 !important; /* yellow */
+  color: #152c4b !important;      /* deep blue text */
+
+  /* override the animation variable for the border-draw */
+  --cc-accent: #fbeec9; /* blue animated border */
+}
+
+/* ============================================================
+   Saved Cruises – Card Layout
+   ============================================================ */
+
+.cc-saved-cruise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.cc-saved-cruise-card {
+  position: relative;
+  padding: 1.75rem 2.25rem 1.9rem;
+  border-radius: 32px;
+  background: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.26);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+/* X / remove button */
+
+.cc-saved-remove-btn {
+  position: absolute;
+  top: 1.4rem;
+  right: 1.9rem;
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.cc-saved-remove-btn:hover {
+  color: #4b5563;
+}
+
+/* Top content (title, ship, date, CTA) */
+
+.cc-saved-cruise-top {
+  cursor: pointer;
+}
+
+.cc-saved-cruise-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #020617;
+  margin-bottom: 0.35rem;
+}
+
+.cc-saved-cruise-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.cc-saved-cruise-ship {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #020617;
+}
+
+.cc-saved-cruise-date {
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.cc-saved-cruise-cta {
+margin-top: 0.5rem;
+width: 100%;
+    border: none;
+    border-radius: 999px;
+   padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    letter-spacing: 0em;
+    font-weight: 500;
+    background: rgba(231, 245, 255, 0.98);
+    color: #274669;
+        display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, background 0.12s ease-out;
+}
+
+.cc-saved-cruise-cta:hover{
+  background: #0f2c55;
+	color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.4);
+}
+
+/* Bottom row: logo + countdown */
+
+.cc-saved-cruise-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 1.75rem;
+  gap: 1.5rem;
+}
+
+.cc-saved-cruise-logo-wrap {
+  flex: 0 0 auto;
+  max-width: 220px;
+}
+
+.cc-cruise-logo {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.cc-saved-cruise-countdown {
+  margin-left: auto;
+  text-align: right;
+}
+
+.cc-countdown-number {
+  display: block;
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #ffc928;
+  line-height: 1;
+}
+
+.cc-countdown-label {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #020617;
+}
+
+/* --- “Cruise Day Is Here!” layout --- */
+
+.cc-saved-cruise-bottom--today {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.75rem;
+  gap: 1.5rem;
+}
+
+.cc-saved-cruise-logo-wrap--today {
+  flex: 0 0 auto;
+  max-width: 190px;
+}
+
+.cc-saved-cruise-today {
+  text-align: right;
+}
+
+.cc-countdown-today-label {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffc928;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Saved view: tweak main padding ---------- */
+
+.cc-app-main.cc-app-main--saved {
+  padding-top: 1.5rem;
+}
+
+/* ============================================================
+   Responsive tweaks
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .cc-account-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cc-account-panel {
+    padding: 1.6rem 1.6rem 1.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .cc-saved-cruise-card {
+    padding: 1.4rem 1.6rem 1.5rem;
+  }
+
+  .cc-saved-cruise-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cc-saved-cruise-bottom,
+  .cc-saved-cruise-bottom--today {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cc-saved-cruise-countdown,
+  .cc-saved-cruise-today {
+    text-align: left;
+  }
+
+  .cc-countdown-today-label {
+    font-size: 1.1rem;
+    margin-top: 0.4rem;
+  }
+}
+
+/* Name fields on create account */
+.cc-auth-name-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.cc-auth-name-field {
+  flex: 1;
+}
+
+/* Password success message */
+.cc-auth-success {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #15803d;
+}
+
+/* Actions row on password form */
+.cc-account-password-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.cc-account-actions {
+  display: flex;
+  flex-direction: column;        /* Stack vertically */
+  gap: 1rem;                      /* Space between buttons */
+  margin-top: 1.5rem;
+  width: 100%;                    /* Buttons full width of container */
+}
+
+.cc-account-actions .cc-account-secondary-btn {
+  width: 100%;                    /* Full-width buttons */
+  text-align: center;
+}
+
+/* Ship name + countdown inline */
+.cc-saved-cruise-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0rem;
+}
+
+/* Inline countdown (smaller than the bottom version) */
+.cc-saved-cruise-countdown--inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 600;
+  color: var(--cc-dark);
+  text-align: right;
+  font-size: 0.85rem;
+  line-height: 1.1;
+}
+
+.cc-saved-cruise-countdown--inline .cc-countdown-number {
+  font-size: 3.25rem;
+}
+
+/* Optional: special style for 'Cruise Day!' */
+.cc-saved-cruise-today-inline {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #0a6b37;
+}
+
+.cc-saved-cruise-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 160px;
+}
+
+/* Footer container */
+.cc-app-footer {
+  margin-top: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);             /* Optional: makes it elegant */
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.85rem;
+  color: rgb(249, 250, 251); /* Slate-800 for dark readability */
+	width: 100%;
+	border-radius: 26px;
+}
+
+/* Stacked, centered layout */
+.cc-footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: center;
+  line-height: 1.35;
+}
+
+/* Subtle copyright text */
+.cc-footer-copy {
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+/* Splash screen layout */
+.cc-splash-root {
+  min-height: 100vh;
+  width: 100%;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cc-splash-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 2.5rem 2rem;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.86); /* deep navy overlay */
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.75);
+  text-align: center;
+  color: #f9fafb;
+}
+
+.cc-splash-logo {
+  height: 52px;
+  object-fit: contain;
+  margin: 0 auto 1rem;
+}
+
+.cc-splash-tagline {
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  opacity: 0.85;
+  margin-bottom: 0.75rem;
+}
+
+.cc-splash-text {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  margin-bottom: 1.5rem;
+}
+
+.cc-splash-spinner {
+  display: flex;
+  justify-content: center;
+}
+
+/* === Modern iOS-Style Install Card === */
+.cc-ios-install-card {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+  z-index: 999999;
+
+  width: calc(100% - 2rem);
+  max-width: 440px;
+
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+
+  border-radius: 22px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+
+  animation: cc-ios-fade-up 0.35s ease-out;
+}
+
+@keyframes cc-ios-fade-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.cc-ios-install-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #0a1a29;
+}
+
+.cc-ios-install-sub {
+  font-size: 0.82rem;
+  color: #334155;
+  margin-bottom: 1rem;
+  line-height: 1.35;
+}
+
+.cc-ios-install-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.cc-ios-install-btn {
+  background: #ffc928;
+  border: none;
+  padding: 0.55rem 1.1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.cc-ios-install-dismiss {
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  color: #475569;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  .cc-ios-install-card {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    padding: 1.1rem 1.15rem;
+  }
+}
+
+.cc-calendar-shell {
+	margin-top: 1rem;
+}
+
+.cc-weather-icon-img {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+/* Continuous, gentle "breathing" animation so it's always visible */
+.cc-weather-icon-img--animated {
+  animation: cc-weather-icon-breathe 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes cc-weather-icon-test {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(3deg) scale(1.3); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+
+/* Optional: style for the fallback */
+.cc-packing-cta button {
+	display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: none;
+	padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+	background: rgba(11, 53, 104, 0.9);
+	color: #ffc928;
+    width: 100%;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.cc-packing-cta button:hover {
+	background: #415c95;
+  color: #ffc928;
+}
+
+.cc-weather-icon-fallback {
+  font-size: 1.8rem;
+  line-height: 1;
+  display: block;
+}
+
+.cc-weather-icon-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  display: block;
+
+  /* Pulse animation */
+  animation: cc-weather-pulse 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes cc-weather-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+.cc-packing-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  text-align: center;
+}
+
+.cc-packing-subtitle {
+  display: block;
+  font-size: 1rem;
+  font-weight: 400;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+
+.cc-packing {
+ 
+   border-radius: 26px;
+  
+}
+
+.cc-packing-header {
+  margin-bottom: 1.75rem;
+}
+
+.cc-packing-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #64748b;
+}
+
+.cc-packing-sections {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.cc-packing-section-title {
+  font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #0f172a;
+    margin-bottom: 0.75rem;
+}
+
+.cc-packing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cc-packing-item {
+  margin-bottom: 0.4rem;
+}
+
+.cc-packing-item-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.cc-packing-checkbox {
+  margin-top: 0.1rem;
+}
+
+.cc-packing-item-text {
+  color: #0f172a;
+}
+
+.cc-packing-item-note {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+/* Saved cruise CTA wrapper */
+.cc-saved-cruise-cta-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+/* Apply your existing CruiseCast button styling */
+.cc-saved-cruise-cta-column button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  background: rgba(11, 53, 104, 0.9);
+  color: #ffc928;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, background 0.12s ease-out;
+}
+
+.cc-saved-cruise-cta-column button:hover {
+  background: #415c95;
+  color: #ffc928;
+	transform: translateY(-1px);
+}
+
+/* Yellow variant */
+.cc-saved-cruise-cta-column .cc-button-yellow {
+  background: #ffc928;
+  color: #152c4b;
+}
+
+.cc-saved-cruise-cta-column .cc-button-yellow:hover {
+  background: #ffdb5c;
+  color: #152c4b;
+}
+
+/* Layout wrapper spacing reset */
+.cc-change-password-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Form block spacing */
+.cc-change-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+/* Input label spacing fix */
+.cc-input-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+/* CTA button column */
+.cc-change-password-btns {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* Horizontal layout for change-password buttons */
+.cc-change-password-button-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.cc-change-password-button-row .cc-cta {
+  flex: 1;            /* Both buttons equal width */
+  text-align: center; /* Ensures centered text */
+}
+
+.cc-packing-cta {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* Default: hide swipe hint */
+.cc-swipe-hint {
+  display: none;
+}
+
+/* Show ONLY on mobile */
+@media (max-width: 768px) {
+  .cc-swipe-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    margin: 8px 0 12px;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(15, 23, 42, 0.55);
+  }
+
+  .cc-swipe-arrow {
+    font-size: 0.9rem;
+  }
+}
+
+.cc-swipe-arrow {
+  font-size: 1.1rem;
+  animation: cc-swipe-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cc-swipe-pulse {
+  0% {
+    transform: translateX(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateX(6px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0.6;
+  }
+}
+
+/* === CRUISE JOURNEY ROUTE ======================================= */
+
+.cc-route {
+  margin: 2rem 0 1.5rem;
+}
+
+.cc-route-title {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 0.75rem;
+  color: #0b3568;
+}
+
+.cc-route-strip {
+  position: relative;
+  display: flex;
+  gap: 2.5rem;
+  padding: 1.75rem 3rem 0.75rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+
+  /* for the moving glow dot */
+  --route-progress: 0;
+}
+
+/* Base line between icons */
+
+
+/* Glow dot that travels along the line */
+.cc-route-strip::after {
+  content: "";
+  position: absolute;
+  top: 96px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    #ffc928 0,
+    rgba(255, 201, 40, 0.7) 40%,
+    rgba(255, 201, 40, 0) 70%
+  );
+  left: calc(84px + var(--route-progress) * (100% - 168px));
+  transform: translate(-50%, -50%);
+  transition: left 0.6s ease-out;
+  z-index: 0;
+}
+
+/* Individual day cards */
+
+.cc-route-card {
+  position: relative;
+  flex: 0 0 220px;
+  min-width: 220px;
+  max-width: 220px;
+  text-align: center;
+  padding: 1.25rem 0.75rem 1rem;
+  border-radius: 18px;
+  background: #f9fafb;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+  z-index: 1; /* above the line */
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    background 0.3s ease;
+}
+
+.cc-route-card--active {
+  transform: translateY(-6px) scale(1.05);
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
+}
+
+/* icon circle */
+
+.cc-route-icon-wrap {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 0.6rem;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #ffc928;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14);
+}
+
+.cc-route-card--active .cc-route-icon-wrap {
+  box-shadow: 0 0 0 6px rgba(255, 201, 40, 0.4);
+}
+
+.cc-route-icon-img {
+  width: 40px;
+  height: 40px;
+}
+
+/* text inside the card */
+
+.cc-route-meta {
+  margin-bottom: 0.25rem;
+}
+
+.cc-route-day-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0b3568;
+}
+
+.cc-route-date {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.cc-route-location {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.cc-route-avg-temp {
+  font-size: 0.8rem;
+  color: #0b3568;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #e0efff;
+  display: inline-block;
+}
+
+/* mobile tweaks */
+
+@media (max-width: 767px) {
+  .cc-route-strip {
+    padding: 1.5rem 1.25rem 0.5rem;
+    gap: 1.4rem;
+  }
+
+  .cc-route-strip::before {
+    left: 60px;
+    right: 60px;
+    top: 88px;
+  }
+
+  .cc-route-strip::after {
+    top: 88px;
+    left: calc(60px + var(--route-progress) * (100% - 120px));
+  }
+
+  .cc-route-card {
+    flex: 0 0 190px;
+    min-width: 190px;
+    max-width: 190px;
+  }
+
+  .cc-route-icon-wrap {
+    width: 64px;
+    height: 64px;
+  }
+
+  .cc-route-icon-img {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+/* Hide scrollbar – Chrome, Safari, Edge */
+.cc-route-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar – Firefox */
+.cc-route-strip {
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar – IE / old Edge */
+.cc-route-strip {
+  -ms-overflow-style: none;
+}
+
+/* Stretch route cards when 3 or fewer */
+.cc-route-track--stretch {
+  overflow: hidden;
+}
+
+.cc-route-track--stretch .cc-route-card {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.cc-route-track {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 8px 4px 14px;
+  scroll-snap-type: x mandatory;
+}
+
+.cc-route-card {
+  flex: 0 0 160px; /* default fixed width */
+  scroll-snap-align: center;
+}
+

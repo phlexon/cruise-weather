@@ -1,0 +1,28 @@
+{
+  "name": "CruiseCast",
+  "short_name": "CruiseCast",
+  "description": "Check cruise weather by ship, date, and port, and save your sailings for easy updates.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#214a7e",
+  "theme_color": "#214a7e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/cruisecast-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}
